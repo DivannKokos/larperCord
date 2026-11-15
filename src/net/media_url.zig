@@ -27,7 +27,18 @@ fn hostOf(url: []const u8) []const u8 {
 pub fn allowedHost(url: []const u8) bool {
     if (!std.mem.startsWith(u8, url, "https://")) return false;
     if (discordHost(url)) return true;
+    if (spotifyImageHost(url)) return true;
     return allow_gif_hosts.load(.acquire) and isGifHost(hostOf(url));
+}
+
+/// A capa do "Ouvindo Spotify" (atividade de presença) só existe na CDN deles,
+/// i.scdn.co: o Discord não guarda a capa lá no proxy de mídia dele (a de um link
+/// do Spotify, sim; a da atividade, não). Direto, então, como o app oficial baixa;
+/// com proxy configurado, ela passa por ele (a mídia de fora toda passa, ver
+/// `forUrl`). Só a capa: a imagem de um perfil, um anexo ou um vídeo de lá
+/// continua de fora.
+pub fn spotifyImageHost(url: []const u8) bool {
+    return std.mem.startsWith(u8, url, "https://") and std.mem.eql(u8, hostOf(url), "i.scdn.co");
 }
 
 /// É um servidor do Discord (CDN, proxy de mídia)? O resto é "de fora".
@@ -270,6 +281,51 @@ test "url do proxy pede o tamanho e mantém o WebP" {
     try std.testing.expect(!allowedHost("https://evil.com/cdn.discordapp.com/x"));
     try std.testing.expect(!allowedHost("http://cdn.discordapp.com/x"));
     try std.testing.expect(!allowedHost("https://cdn.discordapp.com.evil.com/x"));
+}
+
+/// Imagem grande de uma atividade da presença (jogo, música, transmissão…):
+///  - "mp:external/…" (imagem de fora, guardada pelo Discord) vem pelo proxy de mídia;
+///  - só números é um asset da aplicação, no CDN;
+///  - "spotify:<id>" é a capa do álbum, na CDN do Spotify: https://i.scdn.co/image/<id>
+///    (o app oficial baixa direto de lá também). O id tem entre 16 e 64 de letras
+///    e números (o da capa costuma ser de 40 hexadecimais): um id estranho não
+///    vira endereço de site nenhum.
+/// Outro formato, ou um id desses furado: "" (sem imagem; a interface mostra o
+/// ícone da aplicação ou a inicial do nome).
+pub fn activityImage(buf: []u8, app_id: u64, key: []const u8) []const u8 {
+    if (std.mem.startsWith(u8, key, "mp:")) return std.fmt.bufPrint(buf, "https://media.discordapp.net/{s}", .{key[3..]}) catch "";
+    if (std.mem.startsWith(u8, key, "spotify:")) {
+        const id = key["spotify:".len..];
+        if (id.len < 16 or id.len > 64) return "";
+        for (id) |ch| if (!std.ascii.isAlphanumeric(ch) and ch != '-' and ch != '_') return "";
+        return std.fmt.bufPrint(buf, "https://i.scdn.co/image/{s}", .{id}) catch "";
+    }
+    if (key.len == 0 or app_id == 0) return "";
+    for (key) |ch| if (!std.ascii.isDigit(ch)) return "";
+    return std.fmt.bufPrint(buf, "https://cdn.discordapp.com/app-assets/{d}/{s}.png", .{ app_id, key }) catch "";
+}
+
+test "imagem grande da atividade: capa do spotify, asset do app e os de fora" {
+    var b: [256]u8 = undefined;
+    const capa = "ab67616d00001e02ff9ca7b9554b2b32a47e04a4";
+    try std.testing.expectEqualStrings("https://i.scdn.co/image/" ++ capa, activityImage(&b, 0, "spotify:" ++ capa));
+    // Id curto demais, com sinal estranho, vazio, ou outro formato de fora: sem imagem.
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "spotify:curto"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "spotify:" ++ capa ++ "/../../etc"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "spotify:"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "spotify:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "plataforma:ab67616d00001e02"));
+    // Os formatos de sempre: o proxy de mídia e o asset da aplicação.
+    try std.testing.expectEqualStrings("https://media.discordapp.net/external/abc/https/exemplo.com/x.png", activityImage(&b, 0, "mp:external/abc/https/exemplo.com/x.png"));
+    try std.testing.expectEqualStrings("https://cdn.discordapp.com/app-assets/123/456.png", activityImage(&b, 123, "456"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 0, "456"));
+    try std.testing.expectEqualStrings("", activityImage(&b, 123, ""));
+    try std.testing.expectEqualStrings("", activityImage(&b, 123, "12a"));
+    // A capa do Spotify é um domínio permitido; o resto da CDN deles, não.
+    try std.testing.expect(allowedHost("https://i.scdn.co/image/" ++ capa));
+    try std.testing.expect(!allowedHost("https://i.scdn.co.evil.com/image/x"));
+    try std.testing.expect(!allowedHost("http://i.scdn.co/image/x"));
+    try std.testing.expect(!allowedHost("https://evil.com/i.scdn.co/image/x"));
 }
 
 /// Imagem de um emoji personalizado. Sem `animated=true` o CDN devolve só o
