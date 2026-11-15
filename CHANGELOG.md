@@ -1,5 +1,10 @@
 # What changed in each version
 
+## 0.6.7
+
+**Presence**
+- Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
+
 ## 0.6.6
 
 **Appearance**
