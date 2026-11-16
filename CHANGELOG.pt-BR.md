@@ -1,5 +1,10 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Mensagens**
+- Mensagem com um `*` sozinho (ou `**`, `~~`, `||` sem nada que feche) não some mais: o marcador se engolia e levava o resto da mensagem para o estilo, então uma mensagem que era só "*" aparecia vazia. Agora o marcador só dá estilo quando tem par, como no Discord, e senão aparece como foi digitado. `2 * 3 * 4` também aparece como foi digitado.
+
 ## 0.6.6
 
 **Aparência**

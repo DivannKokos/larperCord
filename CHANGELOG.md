@@ -1,5 +1,10 @@
 # What changed in each version
 
+## 0.6.7
+
+**Messages**
+- A message with a lone `*` (or `**`, `~~`, `||` with nothing to close it) no longer vanishes: the marker used to swallow itself and turn the rest of the message into that style, so a message that was just "*" came out empty. Now a marker only styles text when there is one to close it, like Discord, and otherwise shows as typed. `2 * 3 * 4` shows as typed too.
+
 ## 0.6.6
 
 **Appearance**
