@@ -63,6 +63,8 @@ Settings → Mascot → **Customize** dresses up the Terminal mascot. A big prev
 
 - **Ready-made looks**: 16 complete looks, from Hacker to Little angel. **Random look** picks one that matches, **Default** goes back to the usual mascot and **Undo** takes back the last change.
 - **Eye height** and **Mouth height**: two sliders under the buttons move the eyes and the mouth up or down on the face. Moving one toward the other pushes it along, so they never get closer than in the usual drawing. **Default** puts them back.
+- **Name**: give the mascot a name (up to 24 letters). It shows when you rest the mouse on the corner mascot and under the preview.
+- **More tweaks** opens more sliders: eye position, spacing, uneven eyes and size, mouth position and size, ear size and angle, a rounder or squarer and a slimmer or chubbier body, and how strong the blush is. **Two-color eyes** gives the right eye its own color. You can also grab the eyes or the mouth in the preview and drag them.
 - **Eyes, Mouth, Hat, Accessories, Ears, Colors**: a grid of pictures for each. 15 eyes, 16 mouths, 22 hats, 12 accessories (glasses and neckwear one at a time), 6 ear shapes, 14 palettes, or your own hex for each of the five colors, or the theme's accent.
 - The look shows wherever the mascot does: the openings, About, the empty lists and the corner mascot. With a hat picked, the corner mascot doesn't switch to the holiday hat; **Holiday hats** under Corner mascot turns those off. The Classic mascot stays as it is.
 
