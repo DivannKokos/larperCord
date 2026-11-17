@@ -41,6 +41,35 @@ pub fn close(ctx: *d.Ctx) void {
 var shown_key: u64 = 0;
 pub var appearing = false;
 
+/// O popup de agora é da janela flutuante (app_flutuante.zig): o cartão de alguém da
+/// call, o menu do microfone, o mixer. Cada janela desenha (e fecha com um clique fora)
+/// só o seu, nas coordenadas dela.
+pub var in_pip = false;
+var claimed_key: u64 = 0;
+
+/// Há um popup aberto na janela deste quadro.
+pub fn openHere(ctx: *const d.Ctx) bool {
+    return ctx.st.popup != .none and in_pip == ctx.pip;
+}
+
+/// O popup que abriu (ou trocou) desde a última conferência é de `pip`. A flutuante
+/// confere antes do quadro dela (o que mudou até ali foi a principal, ou uma ação dela) e
+/// depois do conteúdo; a principal, antes de desenhar os popups e no fim do quadro.
+pub fn claim(st: *const state.State, pip: bool) void {
+    const k = popupKey(st.popup);
+    if (k != claimed_key) {
+        claimed_key = k;
+        in_pip = pip and k != 0;
+    }
+}
+
+/// A janela flutuante fechou: o popup dela vai junto.
+pub fn dropPip(st: *state.State) void {
+    if (!in_pip) return;
+    in_pip = false;
+    st.popup = .none;
+}
+
 // --- Animação de abertura -------------------------------------------------
 // Cada popup entra com um fade e um leve zoom/deslize. As listas de desenho
 // do popup (a janela e as regiões com rolagem de dentro dele) são anotadas
@@ -223,6 +252,16 @@ fn movable(ctx: *d.Ctx, uid: Id) ?*const @import("../core/store.zig").ChannelSta
 
 /// Volume e "silenciar para mim" no menu de quem está na call com a gente (os
 /// outros ids do menu e do ui/conta_menu.zig não usam estes).
+/// "Abrir em janela flutuante" (app_flutuante.zig), no menu do canal.
+const id_pip: u8 = 95;
+
+/// A conversa pode ir para a janela flutuante (core/flutuante.zig `conversaFlutua`).
+pub fn floats(ctx: *const d.Ctx, ch: Id) bool {
+    if (ctx.pip) return false;
+    const cs = ctx.store.channel(ch) orelse return false;
+    return @import("../core/flutuante.zig").conversaFlutua(cs.info.kind, ctx.store.canAccess(&cs.info));
+}
+
 const id_volume: u8 = 38;
 const id_mute_local: u8 = 39;
 const volume_row_h: f32 = 54;
@@ -384,6 +423,7 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
             add(&items, &n, .{ .label = "Abrir em nova aba", .en = "Open in New Tab", .id = 41 });
             // Tela dividida: o canal ao lado do que está aberto (até 3).
             if (mosaic.canOpenBeside(ctx, id)) add(&items, &n, .{ .label = "Abrir ao lado", .en = "Open to the Side", .id = 45 });
+            if (floats(ctx, id)) add(&items, &n, .{ .label = "Abrir em janela flutuante", .en = "Open in Floating Window", .id = id_pip });
             n += conta_menu.channelItems(ctx, id, items[n..]);
             // Thread: entrar, sair e as arquivadas do mesmo canal pai. Num canal
             // de texto: as threads dele (a lista de canais só mostra algumas).
@@ -456,7 +496,7 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
             add(&items, &n, .{ .label = "Ver perfil", .en = "View Profile", .id = 84, .sep = true });
         },
         .pet => for (@import("mascote_pet.zig").menu_items, 1..) |it, i| add(&items, &n, .{ .label = it.pt, .en = it.en, .id = @intCast(i) }),
-        .tabs => n += @import("conjuntos.zig").menuItems(ctx, items[n..]),
+        .tabs => n += @import("conjuntos.zig").menuItems(ctx, items[n..], id),
         .notif => n += conta_menu.notifItems(ctx, id, items[n..]),
         .block_confirm => n += conta_menu.blockItems(ctx, id, items[n..]),
         .voice_move => {
@@ -681,7 +721,7 @@ fn choose(ctx: *d.Ctx, kind: state.MenuKind, id: Id, item: u8, r: d.Rect) void {
     const st = ctx.st;
     close(ctx);
     if (kind == .pet) return @import("mascote_pet.zig").menuChoose(ctx, item);
-    if (kind == .tabs) return @import("conjuntos.zig").menuChoose(ctx, item);
+    if (kind == .tabs) return @import("conjuntos.zig").menuChoose(ctx, item, id);
     if (kind == .plugin_choices) {
         const host = @import("../plugins/host.zig");
         const hit = host.menuEntry(host.appOf(), choice_kind, choice_index) orelse return;
@@ -800,6 +840,7 @@ fn choose(ctx: *d.Ctx, kind: state.MenuKind, id: Id, item: u8, r: d.Rect) void {
             ctx.act(.{ .focus_tab = st.tabs.items.len - 1 });
         },
         45 => mosaic.openBeside(ctx, id),
+        id_pip => ctx.act(.{ .flutuante = .{ .abrir = .{ .conversa = id } } }),
         46 => if (ctx.store.channel(id)) |cs| {
             st.voice_guild = cs.info.guild;
             ctx.act(.leave_voice);

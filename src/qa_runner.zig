@@ -43,6 +43,16 @@ pub const Target = union(enum) {
 /// tela): fica fora até o próximo passo que mexe o mouse.
 pub var mouse_out = false;
 
+/// Os passos de mouse e teclado vão para a janela flutuante (app_flutuante.zig) e não
+/// para a principal; as marcas dela começam com "pip/".
+pub var pip_mode = false;
+const app_flutuante = @import("app_flutuante.zig");
+
+fn evIo(app: *App) *c.ImGuiIO {
+    if (pip_mode) if (app_flutuante.ioOf(app)) |io| return io;
+    return app.io;
+}
+
 pub const Op = union(enum) {
     section: []const u8,
     click: Target,
@@ -2874,6 +2884,7 @@ const ops_lsp = [_]Op{expect("pronto", ready)} ++ lsp_ops;
 const ops_lsp_quit = [_]Op{expect("pronto", ready)} ++ lsp_ops_quit;
 const qa_bandeja = @import("qa_bandeja.zig");
 const ops_bandeja = [_]Op{expect("pronto", ready)} ++ qa_bandeja.ops;
+const ops_flutuante = [_]Op{expect("pronto", ready)} ++ @import("qa_flutuante.zig").ops;
 const ops_bandeja_sair = [_]Op{ expect("pronto", ready), click("guild:500000") } ++ qa_bandeja.ops_no_tray;
 const ops_bandeja_menu = [_]Op{ expect("pronto", ready), click("guild:500000") } ++ qa_bandeja.ops_quit;
 const ops_bandeja_sair_aberta = [_]Op{ expect("pronto", ready), click("guild:500000") } ++ qa_bandeja.ops_quit_open;
@@ -3318,6 +3329,7 @@ const suites = [_]struct { []const u8, []const Op }{
     .{ "lsp", &ops_lsp },
     .{ "lsp-quit", &ops_lsp_quit },
     .{ "bandeja", &ops_bandeja },
+    .{ "flutuante", &ops_flutuante },
     .{ "bandeja-sair", &ops_bandeja_sair },
     .{ "bandeja-menu", &ops_bandeja_menu },
     .{ "bandeja-sair-aberta", &ops_bandeja_sair_aberta },
@@ -3425,10 +3437,10 @@ pub const Runner = struct {
 
     /// Se o elemento está fora da janela, rola até ele (como uma pessoa faria).
     fn scrollTo(r: *Runner, app: *App, p: [2]f32) bool {
-        const h = app.io.*.DisplaySize.y;
+        const h = evIo(app).*.DisplaySize.y;
         if (p[1] > 2 and p[1] < h - 2) return false;
-        r.pos(app, .{ app.io.*.DisplaySize.x * 0.6, h * 0.5 });
-        c.ImGuiIO_AddMouseWheelEvent(app.io, 0, if (p[1] >= h - 2) -2 else 2);
+        r.pos(app, .{ evIo(app).*.DisplaySize.x * 0.6, h * 0.5 });
+        c.ImGuiIO_AddMouseWheelEvent(evIo(app), 0, if (p[1] >= h - 2) -2 else 2);
         r.sub = 0;
         // Espera a rolagem acontecer e as posições serem redesenhadas.
         r.settle = 4;
@@ -3652,7 +3664,7 @@ pub const Runner = struct {
                     return;
                 };
                 const p: [2]f32 = .{ rect.x + rect.w / 2, rect.y + rect.h / 2 };
-                if (p[1] < 2 or p[1] > app.io.*.DisplaySize.y - 2 or p[0] < 2 or p[0] > app.io.*.DisplaySize.x - 2) {
+                if (p[1] < 2 or p[1] > evIo(app).*.DisplaySize.y - 2 or p[0] < 2 or p[0] > evIo(app).*.DisplaySize.x - 2) {
                     sw.i += 1;
                     sw.phase = 0;
                     return;
@@ -3664,11 +3676,11 @@ pub const Runner = struct {
                 sw.phase = 2;
             },
             2 => {
-                c.ImGuiIO_AddMouseButtonEvent(app.io, 0, true);
+                c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, true);
                 sw.phase = 3;
             },
             3 => {
-                c.ImGuiIO_AddMouseButtonEvent(app.io, 0, false);
+                c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, false);
                 sw.phase = 4;
                 sw.frames = 0;
             },
@@ -3696,6 +3708,13 @@ pub const Runner = struct {
     /// cursor do sistema no lugar do mouse a cada quadro. Aconteceu no Windows da
     /// CI ao encolher a janela: o clique do roteiro ia parar em outro lugar.
     pub fn holdMouse(r: *Runner, app: *App) void {
+        // O roteiro está na janela flutuante: a principal fica sem o mouse, e o dele vai
+        // para a fila do contexto dela (o quadro dela lê logo depois).
+        if (pip_mode and app_flutuante.ioOf(app) != null) {
+            c.ImGuiIO_AddMousePosEvent(app.io, -std.math.floatMax(f32), -std.math.floatMax(f32));
+            if (r.mouse_set and !mouse_out) c.ImGuiIO_AddMousePosEvent(evIo(app), r.mouse[0], r.mouse[1]);
+            return;
+        }
         if (mouse_out) {
             c.ImGuiIO_AddMousePosEvent(app.io, -std.math.floatMax(f32), -std.math.floatMax(f32));
         } else if (r.mouse_set) c.ImGuiIO_AddMousePosEvent(app.io, r.mouse[0], r.mouse[1]);
@@ -3705,7 +3724,7 @@ pub const Runner = struct {
         mouse_out = false;
         r.mouse_set = true;
         r.mouse = p;
-        c.ImGuiIO_AddMousePosEvent(app.io, p[0], p[1]);
+        c.ImGuiIO_AddMousePosEvent(evIo(app), p[0], p[1]);
     }
 
     /// O alvo parou de se mexer? A conversa rola suave depois de uma mensagem, e
@@ -3757,27 +3776,27 @@ pub const Runner = struct {
         }
         switch (r.sub) {
             0 => {
-                if (ctrl_held) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Ctrl, true);
+                if (ctrl_held) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Ctrl, true);
                 // Em máquina lenta, dois quadros já passam do tempo de um duplo clique.
                 // (O ImGui exige o atraso do clique simples maior que esse tempo.)
                 if (double) {
-                    r.dclick_time = .{ app.io.*.MouseDoubleClickTime, app.io.*.MouseSingleClickDelay };
-                    app.io.*.MouseSingleClickDelay = 3.5;
-                    app.io.*.MouseDoubleClickTime = 3;
+                    r.dclick_time = .{ evIo(app).*.MouseDoubleClickTime, evIo(app).*.MouseSingleClickDelay };
+                    evIo(app).*.MouseSingleClickDelay = 3.5;
+                    evIo(app).*.MouseDoubleClickTime = 3;
                     // Com esse tempo, um duplo clique logo depois de outro contaria como 3º e 4º cliques.
-                    app.io.*.MouseClickedTime[@intCast(button)] = -1e9;
+                    evIo(app).*.MouseClickedTime[@intCast(button)] = -1e9;
                 }
                 r.pos(app, r.target_pos);
             },
-            1 => c.ImGuiIO_AddMouseButtonEvent(app.io, button, true),
-            2 => c.ImGuiIO_AddMouseButtonEvent(app.io, button, false),
-            3 => if (double) c.ImGuiIO_AddMouseButtonEvent(app.io, button, true),
-            4 => if (double) c.ImGuiIO_AddMouseButtonEvent(app.io, button, false),
+            1 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), button, true),
+            2 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), button, false),
+            3 => if (double) c.ImGuiIO_AddMouseButtonEvent(evIo(app), button, true),
+            4 => if (double) c.ImGuiIO_AddMouseButtonEvent(evIo(app), button, false),
             else => {
-                if (ctrl_held) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Ctrl, false);
+                if (ctrl_held) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Ctrl, false);
                 if (double) {
-                    app.io.*.MouseDoubleClickTime = r.dclick_time[0];
-                    app.io.*.MouseSingleClickDelay = r.dclick_time[1];
+                    evIo(app).*.MouseDoubleClickTime = r.dclick_time[0];
+                    evIo(app).*.MouseSingleClickDelay = r.dclick_time[1];
                 }
                 return r.next();
             },
@@ -3836,12 +3855,12 @@ pub const Runner = struct {
                 const z = resolve(app, dg.to, &b2) orelse a;
                 switch (r.sub) {
                     0 => r.pos(app, a),
-                    1 => c.ImGuiIO_AddMouseButtonEvent(app.io, 0, true),
+                    1 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, true),
                     2, 3, 4, 5 => {
                         const k = @as(f32, @floatFromInt(r.sub - 1)) / 4;
                         r.pos(app, .{ a[0] + (z[0] - a[0]) * k, a[1] + (z[1] - a[1]) * k });
                     },
-                    6 => c.ImGuiIO_AddMouseButtonEvent(app.io, 0, false),
+                    6 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, false),
                     else => return blk: {
                         r.next();
                         break :blk true;
@@ -3869,12 +3888,12 @@ pub const Runner = struct {
                 const a = r.target_pos;
                 switch (r.sub) {
                     0 => r.pos(app, a),
-                    1 => c.ImGuiIO_AddMouseButtonEvent(app.io, 0, true),
+                    1 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, true),
                     2, 3, 4, 5 => {
                         const k = @as(f32, @floatFromInt(r.sub - 1)) / 4;
                         r.pos(app, .{ a[0] + dg.dx * k, a[1] });
                     },
-                    6 => c.ImGuiIO_AddMouseButtonEvent(app.io, 0, false),
+                    6 => c.ImGuiIO_AddMouseButtonEvent(evIo(app), 0, false),
                     7 => {},
                     else => {
                         r.next();
@@ -3886,20 +3905,20 @@ pub const Runner = struct {
             .key => |k| {
                 switch (r.sub) {
                     0 => {
-                        if (k.ctrl) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Ctrl, true);
-                        if (k.shift) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Shift, true);
-                        if (k.alt) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Alt, true);
+                        if (k.ctrl) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Ctrl, true);
+                        if (k.shift) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Shift, true);
+                        if (k.alt) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Alt, true);
                     },
                     1 => {
                         // Como no laço do app: com a lista do autocompletar
                         // aberta, a tecla é dela e o campo de texto não vê.
-                        if (autocomplete.takeImGuiKey(k.key, k.shift, k.ctrl)) r.sub = 2 else c.ImGuiIO_AddKeyEvent(app.io, k.key, true);
+                        if (!pip_mode and autocomplete.takeImGuiKey(k.key, k.shift, k.ctrl)) r.sub = 2 else c.ImGuiIO_AddKeyEvent(evIo(app), k.key, true);
                     },
-                    2 => c.ImGuiIO_AddKeyEvent(app.io, k.key, false),
+                    2 => c.ImGuiIO_AddKeyEvent(evIo(app), k.key, false),
                     3 => {
-                        if (k.ctrl) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Ctrl, false);
-                        if (k.shift) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Shift, false);
-                        if (k.alt) c.ImGuiIO_AddKeyEvent(app.io, c.ImGuiMod_Alt, false);
+                        if (k.ctrl) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Ctrl, false);
+                        if (k.shift) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Shift, false);
+                        if (k.alt) c.ImGuiIO_AddKeyEvent(evIo(app), c.ImGuiMod_Alt, false);
                     },
                     else => return blk: {
                         r.next();
@@ -3911,7 +3930,7 @@ pub const Runner = struct {
             .text => |t| {
                 var buf: [512]u8 = undefined;
                 const z = std.fmt.bufPrintSentinel(&buf, "{s}", .{t}, 0) catch "";
-                c.ImGuiIO_AddInputCharactersUTF8(app.io, z.ptr);
+                c.ImGuiIO_AddInputCharactersUTF8(evIo(app), z.ptr);
                 r.next();
             },
             .wait => |ms| if (now() - r.step_ms >= ms) r.next(),

@@ -33,6 +33,7 @@ test {
     _ = @import("core/sons.zig");
     _ = @import("core/som_arquivo.zig");
     _ = @import("core/janela.zig");
+    _ = @import("core/flutuante.zig");
     _ = @import("core/bandeja.zig");
     _ = @import("core/ruido.zig");
     _ = @import("core/nivel.zig");

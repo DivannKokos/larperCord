@@ -544,6 +544,11 @@ pub const Action = union(enum) {
     react: struct { id: Id, emoji: types.Reaction },
     open_dm: Id,
     send_dm: struct { user: Id, text: []const u8 },
+    /// A caixa da janela flutuante: manda na conversa que ela segue, seja qual for a
+    /// aba aberta na principal (texto alocado com o gpa da interface).
+    send_to: struct { channel: Id, text: []const u8 },
+    /// A janela flutuante (app_flutuante.zig): abrir, fechar, voltar para a principal.
+    flutuante: @import("flutuante.zig").Pedido,
     copy: []const u8,
     jump_to: Id,
     /// Abre o canal e vai até a mensagem (buscando em volta dela se preciso).

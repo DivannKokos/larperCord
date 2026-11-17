@@ -2,6 +2,10 @@
 
 ## 0.6.7
 
+**Floating window**
+- Picture-in-picture: right-click the conversation name in the header, a tab or a channel (or use the command palette) and pick "Open in Floating Window", or press the new button in the call bar: a small separate window, always on top and resizable, follows that conversation live with a message box to reply, or the call with everyone's tiles, who's talking and the mute, deafen and leave buttons. The arrow button brings the main window back on that conversation or call, even from the tray, and the floating window keeps working while the main one is hidden in the tray. Its top bar moves it, it remembers its size and place, it closes by itself when the call ends, and one is open at a time.
+- It stays light: it draws with the main window's fonts, pictures and emoji (nothing is loaded twice), only when something in it changes, and closed it costs nothing. On Wayland the compositor decides whether a window stays on top (KWin and Hyprland let you pin it), and the app says so the first time. Japanese follows the new texts; the new Russian ones are in English for now.
+
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 

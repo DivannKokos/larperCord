@@ -210,7 +210,7 @@ fn image(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, scale:
     }
     if (held_back) d.tip(ctx, r, i18n.tr("Modo economia: clique para baixar", "Data saver: click to download"), hb.hovered);
     if (a.video and !held_back) d.tip(ctx, r, if (video.canPlay(a.link, a.size)) i18n.tr("Tocar o vídeo", "Play video") else i18n.tr("Abrir o vídeo no navegador", "Open video in browser"), hb.hovered);
-    if (hb.right and msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (hb.right and msg_id != 0 and !ctx.pip) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
 }
 
 /// Lugar reservado de uma imagem que o modo economia ainda não baixou.

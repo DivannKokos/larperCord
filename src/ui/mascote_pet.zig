@@ -239,7 +239,12 @@ const plant_w: f32 = 18;
 var anchors: [@typeInfo(Anchor).@"enum".field_names.len]struct { r: d.Rect, ms: i64 } = @splat(.{ .r = .{ .x = 0, .y = 0, .w = 0, .h = 0 }, .ms = -100_000 });
 
 /// Um lugar da interface neste quadro (ver `Anchor`).
+/// Desenhando a janela flutuante (app_flutuante.zig): o que ela marca está em outra
+/// janela, e o mascote mora na principal.
+pub var pausado = false;
+
 pub fn anchor(a: Anchor, r: d.Rect, now: i64) void {
+    if (pausado) return;
     anchors[@intFromEnum(a)] = .{ .r = r, .ms = now };
 }
 

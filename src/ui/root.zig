@@ -180,7 +180,9 @@ pub fn frame(ctx: *d.Ctx, placed: *std.ArrayList(layout.Placed), previews: []con
     c.ImGui_End();
 
     const t1 = if (profile) c.SDL_GetTicksNS() else 0;
-    popup.draw(ctx);
+    // O popup aberto na janela flutuante é desenhado lá (app_flutuante.zig).
+    popup.claim(ctx.st, false);
+    if (!popup.in_pip) popup.draw(ctx);
     // Formulário de comando e modal de bot: por cima dos popups.
     @import("interact.zig").draw(ctx);
     settings.draw(ctx, previews);
@@ -198,6 +200,8 @@ pub fn frame(ctx: *d.Ctx, placed: *std.ArrayList(layout.Placed), previews: []con
     shortcuts(ctx);
     // A conversão do IME num campo que não é a caixa do chat: por cima de tudo, no cursor dele.
     @import("ime.zig").floating(ctx);
+    // O que abriu depois dos popups (Configurações, paleta, atalhos) também é desta janela.
+    popup.claim(ctx.st, false);
 }
 
 /// `autohide`: o componente some (fica quase invisível) até o mouse chegar

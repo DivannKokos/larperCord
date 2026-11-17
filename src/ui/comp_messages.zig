@@ -345,12 +345,14 @@ fn decoBlock(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, x: f32, 
 /// Faixa da seleção dentro de uma mensagem.
 const SelRange = struct { first: usize, o0: u32, last: usize, o1: u32 };
 
-fn selectionRange(ctx: *d.Ctx, cs: *store_mod.ChannelState) ?SelRange {
+/// `msgs`: as mensagens na tela (na janela flutuante, só o fim da conversa), e os
+/// índices são nelas.
+fn selectionRange(ctx: *d.Ctx, cs: *store_mod.ChannelState, msgs: []const StoredMessage) ?SelRange {
     const sel = &ctx.st.selection;
     if (sel.channel != cs.info.id or sel.empty()) return null;
     var ia: ?usize = null;
     var ib: ?usize = null;
-    for (cs.messages.items, 0..) |m, i| {
+    for (msgs, 0..) |m, i| {
         if (m.msg.id == sel.a_id) ia = i;
         if (m.msg.id == sel.b_id) ib = i;
     }
@@ -391,6 +393,14 @@ extern fn larper_scrollbar_held() bool;
 /// O histórico de um canal, com rolagem própria. `region` é o nome da
 /// região do ImGui (um por painel: os IDs dos botões ficam separados).
 pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*:0]const u8) void {
+    historyIn(ctx, n, r, ch_id, region, ctx.st.scrollOf(ch_id));
+}
+
+/// O histórico com a rolagem `sc`. A janela flutuante (`ctx.pip`) tem a dela, mesmo com
+/// a conversa aberta também na principal, e mostra só o fim da conversa
+/// (core/flutuante.zig `ultimas`): não pede as antigas, não pula para uma mensagem e não
+/// mexe no que é da janela principal (a primeira não lida, o que a pessoa está lendo).
+pub fn historyIn(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*:0]const u8, sc: *@import("state.zig").Scroll) void {
     const cs = ctx.store.channel(ch_id) orelse return;
     // Fórum não tem conversa: a lista de posts entra no lugar.
     if (cs.info.kind == .forum) return forum.page(ctx, n, r, cs, region);
@@ -398,7 +408,8 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
     g.guild = cs.info.guild;
     g.nick_gen = ctx.store.nickGen(cs.info.guild);
     ctx.hot = false;
-    vim.page_h = r.h;
+    const pip = ctx.pip;
+    if (!pip) vim.page_h = r.h;
 
     cs.seen_ms = ctx.now_ms;
     if (cs.history == .failed) return loadFailed(ctx, g, r, ch_id);
@@ -407,7 +418,7 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
     if (cs.history == .none) ctx.act(.{ .retry_history = ch_id });
     if (cs.history != .loaded) return skeleton(ctx, g, r);
 
-    const msgs = cs.messages.items;
+    const msgs = cs.messages.items[if (pip) @import("../core/flutuante.zig").cauda(cs.messages.items.len) else 0..];
     const st = ctx.st;
     st.offsets.resize(st.gpa, msgs.len) catch return;
     st.groups.resize(st.gpa, msgs.len) catch return;
@@ -476,31 +487,31 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
         }
     }
 
-    const sc = st.scrollOf(ch_id);
     const max_scroll = @max(0, total - r.h);
-    // A pessoa está lendo lá em cima: nada dali é cortado (ver Store.trim).
-    cs.reading = !sc.stick_bottom or cs.detached;
+    // A pessoa está lendo lá em cima: nada dali é cortado (ver Store.trim). Quem diz é a
+    // janela principal: a flutuante só mostra o fim.
+    if (!pip) cs.reading = !sc.stick_bottom or cs.detached;
     // Soltou a barra de rolagem: acabou o arraste (ver abaixo).
     if (!c.ImGui_IsMouseDown(0)) bar_drag = 0;
     const dragging_bar = bar_drag == ch_id;
     // Mudou algo acima do que está na tela: mantém no lugar o que estava.
     if (sc.anchor_id != 0 and !sc.stick_bottom and sc.pos >= 0 and !dragging_bar) {
-        if (ctx.store.find(cs, sc.anchor_id)) |am| {
+        if (ctx.store.find(cs, sc.anchor_id)) |am| if (@intFromPtr(am) >= @intFromPtr(msgs.ptr)) {
             const k = (@intFromPtr(am) - @intFromPtr(msgs.ptr)) / @sizeOf(StoredMessage);
             const delta = st.offsets.items[k] + sc.anchor_off - sc.pos;
             if (delta != 0) {
                 sc.pos += delta;
                 sc.target += delta;
             }
-        }
+        };
     }
     // Perto do topo: pede as anteriores (depois de uma falha, com calma).
     // Só depois de soltar a barra: a lista crescendo no meio do arraste muda a proporção dela.
-    if (!dragging_bar and cs.older == .idle and ctx.now_ms >= cs.older_retry_ms and msgs.len > 0 and sc.pos >= 0 and sc.pos < r.h * 0.6 + 200) ctx.act(.{ .load_older = ch_id });
+    if (!pip and !dragging_bar and cs.older == .idle and ctx.now_ms >= cs.older_retry_ms and msgs.len > 0 and sc.pos >= 0 and sc.pos < r.h * 0.6 + 200) ctx.act(.{ .load_older = ch_id });
     // Lendo o passado, perto do fim do que está carregado: pede as seguintes.
-    if (cs.detached and cs.newer == .idle and ctx.now_ms >= cs.newer_retry_ms and msgs.len > 0 and sc.pos >= max_scroll - r.h * 0.6 - 200) ctx.act(.{ .load_newer = ch_id });
+    if (!pip and cs.detached and cs.newer == .idle and ctx.now_ms >= cs.newer_retry_ms and msgs.len > 0 and sc.pos >= max_scroll - r.h * 0.6 - 200) ctx.act(.{ .load_newer = ch_id });
     // Pulo para uma mensagem (clique numa resposta): só no painel focado.
-    if (st.jump != 0 and st.activeChannel() == ch_id) {
+    if (!pip and st.jump != 0 and st.activeChannel() == ch_id) {
         const found = for (msgs, 0..) |m, i| {
             if (m.msg.id != st.jump) continue;
             sc.target = std.math.clamp(st.offsets.items[i] - r.h / 3, 0, max_scroll);
@@ -532,7 +543,7 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
     }
     // Abrir na primeira não lida: a linha no alto da tela. Se ela já cabe na
     // última tela, fica no fim mesmo.
-    if (cs.pos_unread and !cs.cached and cs.around != .loading) {
+    if (!pip and cs.pos_unread and !cs.cached and cs.around != .loading) {
         cs.pos_unread = false;
         if (first_new) |k| {
             const fy = st.offsets.items[k] - new_line_h;
@@ -555,8 +566,10 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
             cs.divider_seen = false;
         }
     }
-    // Com as configurações (ou um popup) por cima, a roda rola elas, não a conversa.
-    const hovered = ctx.hovering(r) and ctx.st.popup == .none and !st.settings.open and !autocomplete.over(ctx) and !@import("resize.zig").over(ctx);
+    // Com as configurações (ou um popup) por cima, a roda rola elas, não a conversa. Na
+    // janela flutuante só conta o que está aberto nela.
+    const hovered = ctx.hovering(r) and !popup.openHere(ctx) and
+        (pip or (!st.settings.open and !autocomplete.over(ctx) and !@import("resize.zig").over(ctx)));
     if (sc.pos < 0 or sc.stick_bottom) {
         sc.target = max_scroll;
         if (sc.pos < 0) sc.pos = max_scroll;
@@ -580,7 +593,7 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
     // Arrastando a barra de rolagem desta conversa. Quem diz é o ImGui, não a posição do mouse: o
     // arraste vale até soltar, com o mouse em qualquer lugar, e um clique perto da borda não conta.
     // A alça de redimensionar painéis fica colada na barra: puxar ela não rola a conversa.
-    if (larper_scrollbar_held() and (bar_drag == ch_id or !@import("resize.zig").over(ctx))) {
+    if (larper_scrollbar_held() and (bar_drag == ch_id or pip or !@import("resize.zig").over(ctx))) {
         bar_drag = ch_id;
         if (@abs(s - sc.pos) > 1) {
             sc.pos = s;
@@ -618,10 +631,12 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
         d.line(dl, mx + 3, r.y, mx + 3, r.bottom(), ctx.col(.accent).alpha(0.18), 1);
     }
 
-    topOfChannel(ctx, dl, g, cs, r, base + 8, top_h);
+    // (Na janela flutuante a lista começa no meio da conversa: nem "começo do canal".)
+    if (!pip) topOfChannel(ctx, dl, g, cs, r, base + 8, top_h);
     // Os botões flutuantes pedem o mouse antes das mensagens: o que estiver
-    // embaixo (uma imagem, a barra de ações) não pega o mesmo clique.
-    var show_bar = divider_after != 0 and !cs.divider_seen and !cs.cached and !cs.pos_unread and n_new > 0;
+    // embaixo (uma imagem, a barra de ações) não pega o mesmo clique. A barra da
+    // primeira não lida é da janela principal (ver a linha delas lá).
+    var show_bar = !pip and divider_after != 0 and !cs.divider_seen and !cs.cached and !cs.pos_unread and n_new > 0;
     if (show_bar) if (first_new) |k| {
         const fy = st.offsets.items[k] - new_line_h;
         if (@abs(sc.pos - sc.target) < 2 and fy >= sc.pos and fy < sc.pos + r.h) {
@@ -641,7 +656,7 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
     const over_float = first_hit.hovered or read_hit.hovered or present_hit.hovered or bottom_hit.hovered;
     if (first_new) |k| newLine(ctx, dl, g, r, base + st.offsets.items[k] - new_line_h);
 
-    const sel = selectionRange(ctx, cs);
+    const sel = selectionRange(ctx, cs, msgs);
     var probe: rich.Probe = .{ .x = ctx.mouse.x, .y = ctx.mouse.y };
     var probe_idx: ?usize = null;
     var i = lo;
@@ -702,7 +717,8 @@ pub fn history(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: [*
                 st.selection = .{ .channel = ch_id, .a_id = m.msg.id, .a_off = off, .b_id = m.msg.id, .b_off = off, .dragging = true };
                 if (c.ImGui_IsMouseDoubleClicked(0)) selectWord(st, m, off);
             }
-            if (c.ImGui_IsMouseClicked(1)) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+            // O menu da mensagem (responder, editar, thread...) é da caixa da janela principal.
+            if (c.ImGui_IsMouseClicked(1) and !pip) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
         }
         // Entre as linhas de um cartão não há texto sob o mouse: fica onde estava.
         const in_gap = probe.out == null and m.msg.embeds.len > 0 and st.selection.b_id == m.msg.id;
@@ -1082,7 +1098,7 @@ fn replyLine(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *const StoredMessage, x:
     // Não carregada: a lista busca em volta dela.
     if (hb.clicked) ctx.act(.{ .jump_to = m.msg.reply_to });
     // Botão direito em qualquer parte da mensagem abre o menu dela.
-    if (hb.right) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (hb.right and !ctx.pip) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
     if (spine_x) |sx| {
         // A "curvinha" ligando o avatar à mensagem respondida.
         c.ImDrawList_PathClear(dl);
@@ -1371,7 +1387,9 @@ fn drawMessage(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, flags:
     // Blocos de código com o botão "Copiar".
     o.ctx = ctx;
     o.msg_id = m.msg.id;
-    const show_bar = under and ctx.st.popup == .none and !ctx.st.selection.dragging and m.msg.id != 0;
+    // A barra de ações (reagir, responder, editar...) é da janela principal: a
+    // flutuante só lê e responde pela caixa dela.
+    const show_bar = under and !ctx.pip and ctx.st.popup == .none and !ctx.st.selection.dragging and m.msg.id != 0;
 
     // Destaque ao pular para esta mensagem.
     const flash = if (m.msg.id == flash_id and ctx.now_ms < flash_until) blk: {
@@ -1483,7 +1501,7 @@ fn drawMessage(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, flags:
                 const hb = d.hitUnder(ctx, @truncate(m.msg.id ^ 0x5151), lr);
                 qa.mark(lr, "reply-line:{d}", .{m.msg.id});
                 if (hb.clicked) ctx.act(.{ .jump_to = m.msg.reply_to });
-                if (hb.right) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+                if (hb.right and !ctx.pip) ctx.popup(.{ .menu = .{ .kind = .message, .id = m.msg.id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
                 const rf = fam.get(.regular);
                 const fw = d.textClipped(dl, rf, g.size - 1, lr.x, d.centerY(lr, g.size - 1), if (hb.hovered) ctx.col(.text) else ctx.col(.faint), full, lr.w);
                 if (tag) |lb| {
@@ -1797,17 +1815,7 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
         lsp_ui.place(fam, r.x + inset, top - tray_h - (if (preview_h > 0) preview_h + 4 else typing_gap), r.w - inset * 2);
     }
 
-    if (d.pflag(n, "typing", true) and cs.typing.items.len > 0) {
-        var buf: [96]u8 = undefined;
-        const who = ctx.store.nameIn(cs.info.guild, cs.typing.items[0].user) orelse i18n.tr("alguém", "someone");
-        const t = i18n.fmt(&buf, "{s} está digitando", "{s} is typing", .{who});
-        const ty = top - 19;
-        const tx = r.x + (if (prompt) @as(f32, 10) else 6);
-        w.typingDots(dl, tx + 4, ty + 8, ctx.col(.muted), ctx.now_ms);
-        d.text(dl, fam.get(.semibold), 13, tx + 24, ty, ctx.col(.muted), t);
-        w.markName(.{ .x = tx + 24, .y = ty, .w = d.width(fam.get(.semibold), 13, t), .h = 16 }, "typing", cs.typing.items[0].user, who);
-        mascote_pet.anchor(.typing, .{ .x = tx, .y = ty, .w = 24 + d.width(fam.get(.semibold), 13, t), .h = 16 }, ctx.now_ms);
-    }
+    if (d.pflag(n, "typing", true)) typingLine(ctx, dl, fam, cs, r.x + (if (prompt) @as(f32, 10) else 6), top - 19);
     // Modo lento: na mesma linha, à direita.
     send_limits.slowmodeLabel(ctx, fam, limit, r.right() - (if (pill) @as(f32, 24) else 6), top - 19);
 
@@ -2011,6 +2019,19 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
             }
         }
     }
+}
+
+/// "fulano está digitando" com os três pontinhos, a partir de `tx, ty`: em cima da caixa
+/// de mensagem da janela principal e da flutuante (ui/flutuante.zig).
+pub fn typingLine(ctx: *d.Ctx, dl: *c.ImDrawList, fam: *d.Family, cs: *const store_mod.ChannelState, tx: f32, ty: f32) void {
+    if (cs.typing.items.len == 0) return;
+    var buf: [96]u8 = undefined;
+    const who = ctx.store.nameIn(cs.info.guild, cs.typing.items[0].user) orelse i18n.tr("alguém", "someone");
+    const t = i18n.fmt(&buf, "{s} está digitando", "{s} is typing", .{who});
+    w.typingDots(dl, tx + 4, ty + 8, ctx.col(.muted), ctx.now_ms);
+    d.text(dl, fam.get(.semibold), 13, tx + 24, ty, ctx.col(.muted), t);
+    w.markName(.{ .x = tx + 24, .y = ty, .w = d.width(fam.get(.semibold), 13, t), .h = 16 }, "typing", cs.typing.items[0].user, who);
+    mascote_pet.anchor(.typing, .{ .x = tx, .y = ty, .w = 24 + d.width(fam.get(.semibold), 13, t), .h = 16 }, ctx.now_ms);
 }
 
 fn submit(ctx: *d.Ctx) void {
