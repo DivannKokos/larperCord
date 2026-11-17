@@ -5,6 +5,10 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Atualizações**
+- Versão nova não fica mais escondida num toast de menos de dois segundos: uma faixa no topo diz qual versão saiu e fica até você fechar, com "Atualizar agora", o progresso do download e "Reiniciar agora" quando ela está instalada; fechar vale até o app abrir de novo. O botão das configurações fica com um pontinho enquanto houver o que atualizar, e com o app na bandeja ou sem foco vai também uma notificação do sistema. Instalado por gerenciador de pacotes, o botão explica como atualizar por ele.
+- Configurações → Atualizações → "Atualizar sozinho", desligado de começo: achou versão nova, baixa e instala em segundo plano (com a assinatura conferida como sempre) e ela abre na próxima vez que o app abrir.
+
 ## 0.6.6
 
 **Aparência**

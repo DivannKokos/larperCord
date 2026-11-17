@@ -62,6 +62,10 @@ const app_presenca = @import("app_presenca.zig");
 const voz_audio = @import("net/voz_audio.zig");
 const lsp_net = @import("net/lsp.zig");
 const updater = @import("net/updater.zig");
+const aviso_versao = @import("core/aviso_versao.zig");
+/// A versão que o "Atualizar sozinho" já tentou instalar nesta sessão.
+var auto_tried_buf: [32]u8 = @splat(0);
+var auto_tried_len: usize = 0;
 const lsp_ui = @import("ui/lsp_ui.zig");
 const mem_tune = @import("platform/mem_tune.zig");
 const mascote = @import("ui/mascote.zig");
@@ -2603,6 +2607,29 @@ pub const App = struct {
         app.desktopNotify(title, body);
     }
 
+    /// Achou versão nova. A faixa no topo aparece sozinha (ui/aviso_atualizacao.zig); com
+    /// a janela escondida ou sem foco vai também um aviso do sistema, e com "Atualizar
+    /// sozinho" a instalação começa já (uma vez por versão).
+    fn updateFound(app: *App) void {
+        const s = updater.snapshot();
+        const v = s.latest();
+        const auto = aviso_versao.instalarSozinho(app.st.settings.auto_update, updater.managedBySystem(), .disponivel, v, auto_tried_buf[0..auto_tried_len]);
+        if (auto) {
+            auto_tried_len = @min(v.len, auto_tried_buf.len);
+            @memcpy(auto_tried_buf[0..auto_tried_len], v[0..auto_tried_len]);
+            updater.install();
+        }
+        const flags = c.SDL_GetWindowFlags(app.win.window);
+        const focused = flags & c.SDL_WINDOW_HIDDEN == 0 and flags & c.SDL_WINDOW_INPUT_FOCUS != 0;
+        if (focused or !app.st.settings.desktop_notifs or app.opts.qa) return;
+        var bb: [160]u8 = undefined;
+        const body = (if (auto)
+            i18n.fmtZ(&bb, "Instalando a versão {s}; ela abre na próxima vez.", "Installing version {s}; it opens next time.", .{v})
+        else
+            i18n.fmtZ(&bb, "Versão {s} disponível. Abra o app para atualizar.", "Version {s} is available. Open the app to update.", .{v}));
+        if (body.len > 0) app.desktopNotify("larperCord", body);
+    }
+
     /// Uma notificação do sistema: notify-send no Linux, o aviso da bandeja no Windows.
     pub fn desktopNotify(app: *App, title: [:0]const u8, body: [:0]const u8) void {
         if (app.notifiers.items.len >= 8) return;
@@ -3186,7 +3213,7 @@ pub const App = struct {
                 }
                 if (picked.items.len > 0) pending = 3;
             }
-            if (updater.takeNotice()) app.st.showToast(now(), false, "atualização disponível: veja em Configurações → Atualizações", "update available: see Settings → Updates", .{});
+            if (updater.takeNotice()) app.updateFound();
             const now_ms = now();
             // Nada venceu ainda: não há por que redesenhar.
             // Nem o tique do minuto com um quadro já desenhado neste minuto.

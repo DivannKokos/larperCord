@@ -5,6 +5,10 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Updates**
+- A new version no longer hides in a toast that lasted under two seconds: a bar at the top says which version came out and stays until you close it, with "Update now", the download progress and "Restart now" when it's installed; closing it lasts until the app opens again. The settings button keeps a dot while there's something to update, and with the app in the tray or unfocused, a desktop notification says so too. Installed by a package manager, the button explains how to update through it.
+- Settings → Updates → "Update automatically", off by default: when a new version is found, it downloads and installs in the background (signature checked as always) and opens the next time the app starts.
+
 ## 0.6.6
 
 **Appearance**

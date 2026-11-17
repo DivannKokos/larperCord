@@ -62,6 +62,7 @@ test {
     _ = @import("core/voice_timer.zig");
     _ = @import("net/voice_info_json.zig");
     _ = @import("net/voz_movido.zig");
+    _ = @import("core/aviso_versao.zig");
     _ = @import("net/limits_json.zig");
     _ = @import("core/conta.zig");
     _ = @import("theme/kdl.zig");
