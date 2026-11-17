@@ -1,5 +1,10 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Servidores**
+- Levou kick ou ban de um servidor (ou saiu dele): nada mais vai para lá. A lista de membros do canal que estava aberto lá não é pedida de novo a cada reconexão, o que esperava para ir para ele é descartado, e a call de lá acaba quieta em vez de tentar voltar com o token velho. O mesmo quando acontece com a conexão caída e a sessão nova simplesmente não traz o servidor de volta.
+
 ## 0.6.6
 
 **Aparência**

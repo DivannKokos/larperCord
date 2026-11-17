@@ -1368,6 +1368,8 @@ pub const App = struct {
     }
 
     fn sendSubscribe(app: *App, sr: SubReq) void {
+        // A rajada acabou depois de o servidor sair da lista (kick, ban): não pede mais.
+        if (app.store.guild(sr.guild) == null) return;
         app.cmd(.{ .subscribe_guild = .{ .guild = sr.guild, .channel = sr.channel, .thread = sr.thread } });
     }
 

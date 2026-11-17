@@ -1,5 +1,10 @@
 # What changed in each version
 
+## 0.6.7
+
+**Servers**
+- Kicked or banned from a server (or you left it): nothing goes to it anymore. The member list of the channel that was open there is no longer asked for again on every reconnect, what was waiting to be sent to it is dropped, and a call there ends quietly instead of trying to reconnect with the old token. The same when it happens while the connection is down and the new session just doesn't bring the server back.
+
 ## 0.6.6
 
 **Appearance**

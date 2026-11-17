@@ -49,6 +49,7 @@ const member_ask = @import("member_ask.zig");
 const envio_json = @import("envio_json.zig");
 const envio = @import("../core/envio.zig");
 const gw_budget = @import("gw_budget.zig");
+const saida = @import("saida_servidor.zig");
 const limits_json = @import("limits_json.zig");
 const debug_log = @import("../platform/debug_log.zig");
 const conta_net = @import("conta_net.zig");
@@ -1284,6 +1285,35 @@ pub const Gateway = struct {
         g.queueOp(.{ .lazy = .{ .guild = guild, .channel = channel, .thread = thread } });
     }
 
+    /// Saímos do servidor (kick, ban, ou saímos nós; net/saida_servidor.zig): a lista
+    /// de membros não é pedida de novo na reconexão, o que dele esperava na fila ou a
+    /// conexão voltar não sai, e a call de lá acaba aqui também. Do lado do Discord ela
+    /// já acabou: sem op 4 para sair, e sem tentar voltar com o token velho.
+    fn leftGuild(g: *Gateway, id: Id) void {
+        g.outbox.forgetGuild(id);
+        if (g.sub_guild == id) {
+            g.sub_guild = 0;
+            g.sub_channel = 0;
+            g.sub_thread = 0;
+        }
+        // Num RESUME, o GUILD_DELETE perdido chega antes do RESUMED, com o que foi
+        // pedido sem conexão ainda guardado (e o op 4 sem resposta, que iria de novo).
+        var i: usize = g.held.items.len;
+        while (i > 0) {
+            i -= 1;
+            if (saida.heldGuild(g.held.items[i]) == id) freeCommand(g.held.orderedRemove(i));
+        }
+        if (g.voice_unconfirmed) |v| if (v.guild == id) {
+            g.voice_unconfirmed = null;
+        };
+        if (g.voice_guild == id and g.voice_channel != 0) {
+            g.stopVoice();
+            g.voice_channel = 0;
+            // O app sai da call sem mandar nada (como quando alguém nos desconecta).
+            g.emit(.{ .voice_state = .{ .channel = null, .user = g.me } });
+        }
+    }
+
     /// Nome do status no gateway (offline = invisível para os outros): o
     /// mesmo das configurações da conta.
     const statusName = status_proto.statusName;
@@ -1425,10 +1455,10 @@ pub const Gateway = struct {
                 // O op 8 de lá sai da fila (a espera do servidor fica: o limite é por
                 // sessão), e um RATE_LIMITED atrasado não o traz de volta.
                 g.members_ask.forgetGuild(id);
-                g.outbox.forgetMembers(id);
                 for (&g.members_sent) |*x| if (x.req.guild == id) {
                     x.req.guild = 0;
                 };
+                g.leftGuild(id);
                 g.emit(.{ .guild_delete = id });
             }
             return;
@@ -2830,6 +2860,17 @@ pub const Gateway = struct {
         member_ask.releaseSent(&g.members_ask, &g.members_sent);
         g.outbox.forgetPending();
         g.voice_unconfirmed = null;
+        // Servidores que deixamos com a conexão caída (kick, ban): o READY não os traz e
+        // GUILD_DELETE nenhum vem. A lista de membros, a call e o que esperava a conexão
+        // ficam por aqui.
+        if (g.sub_guild != 0 and !saida.readyHas(d, g.sub_guild)) g.leftGuild(g.sub_guild);
+        if (g.voice_guild != 0 and g.voice_channel != 0 and !saida.readyHas(d, g.voice_guild)) g.leftGuild(g.voice_guild);
+        var hi: usize = g.held.items.len;
+        while (hi > 0) {
+            hi -= 1;
+            const gid = saida.heldGuild(g.held.items[hi]) orelse continue;
+            if (!saida.readyHas(d, gid)) freeCommand(g.held.orderedRemove(hi));
+        }
         // O pedido de voz pode ter chegado antes do READY; agora o gateway
         // já aceita o op 4. Numa sessão nova a call antiga não vale mais.
         if (g.voice_channel != 0) {
