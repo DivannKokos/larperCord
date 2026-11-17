@@ -17,6 +17,7 @@ const visual = @import("ui/mascote_visual.zig");
 const arquivos = @import("ui/mascote_arquivos.zig");
 const page = @import("ui/settings_mascote.zig");
 const settings_ui = @import("ui/settings.zig");
+const pet = @import("ui/mascote_pet.zig");
 
 fn s(name: []const u8) Op {
     return .{ .section = name };
@@ -349,6 +350,150 @@ fn colorsTabOpen(_: *App) bool {
     return page.currentTab() == 5 and qa.find("mascot-hex:ink") != null;
 }
 
+// --- Altura dos olhos e da boca -------------------------------------------------------
+
+fn heightDrag(comptime which: []const u8, comptime to: f32) Op {
+    const key = "mascot-height:" ++ which;
+    return .{ .drag = .{ .from = .{ .at = .{ .key = key, .fx = 0.5, .fy = 0.5 } }, .to = .{ .at = .{ .key = key, .fx = to, .fy = 0.5 } } } };
+}
+
+/// A prévia parada (sem "Reduzir movimento" ela anima depois de cada troca): os pixels
+/// só mudam com o visual.
+var motion_before = false;
+fn stillPreview(app: *App) void {
+    motion_before = app.st.settings.reduce_motion;
+    app.st.settings.reduce_motion = true;
+}
+fn motionBack(app: *App) void {
+    app.st.settings.reduce_motion = motion_before;
+}
+
+/// Os pixels da prévia grande, resumidos (o que foi para a tela por último).
+fn previewSum(app: *App) ?u64 {
+    const r = qa.find("mascot-preview") orelse return null;
+    const k = app.uiScale();
+    var area: c.SDL_Rect = .{ .x = @intFromFloat(r.x * k), .y = @intFromFloat(r.y * k), .w = @intFromFloat(r.w * k), .h = @intFromFloat(r.h * k) };
+    const surface = c.SDL_RenderReadPixels(app.win.renderer, &area) orelse return null;
+    defer c.SDL_DestroySurface(surface);
+    const details = c.SDL_GetPixelFormatDetails(surface.*.format) orelse return null;
+    const row: usize = @as(usize, @intCast(surface.*.w)) * @as(usize, details.*.bytes_per_pixel);
+    const pitch: usize = @intCast(surface.*.pitch);
+    const px: [*]const u8 = @ptrCast(surface.*.pixels orelse return null);
+    var sum: u64 = 0;
+    for (0..@intCast(surface.*.h)) |y| sum = std.hash.Wyhash.hash(sum, px[y * pitch ..][0..row]);
+    return sum;
+}
+var preview0: u64 = 0;
+fn notePreview(app: *App) void {
+    preview0 = previewSum(app) orelse 0;
+    noteLook(app);
+}
+fn previewChanged(app: *App) bool {
+    const now = previewSum(app) orelse return false;
+    return preview0 != 0 and now != preview0;
+}
+fn previewSame(app: *App) bool {
+    return preview0 != 0 and previewSum(app) == preview0;
+}
+fn eyesTop(_: *App) bool {
+    return look().eye_height == visual.eye_height_range[1] and look().mouth_height == 0 and page.undoDepth() == depth_before + 1;
+}
+fn eyesPushMouth(_: *App) bool {
+    const low = visual.eye_height_range[0];
+    return look().eye_height == low and look().mouth_height == low and page.undoDepth() == depth_before + 2;
+}
+fn mouthPushEyes(_: *App) bool {
+    const top = visual.mouth_height_range[1];
+    return look().mouth_height == top and look().eye_height == top and page.undoDepth() == depth_before + 3;
+}
+fn heightsBack(_: *App) bool {
+    const top = visual.mouth_height_range[1];
+    return look().mouth_height == top and look().eye_height == top;
+}
+
+// --- Invisível: um fantasma só ------------------------------------------------------------
+
+/// Pontos do desenho do mascote (unidades do SVG): onde a orelha fica atrás do corpo, de
+/// cada lado, e onde só tem corpo.
+const ghost_pts = [_][2]f32{ .{ 35, 22 }, .{ 92, 22 }, .{ 20, 50 }, .{ 107, 50 } };
+const behind_ear = 2;
+var ghost_solid: [ghost_pts.len][3]f32 = undefined;
+var ghost_seen: [ghost_pts.len][3]f32 = undefined;
+var ghost_bg: [ghost_pts.len][3]f32 = undefined;
+var ghost_where: [3]f32 = .{ 0, 0, 0 };
+
+fn samplePet(app: *App, out: *[ghost_pts.len][3]f32) void {
+    const k = app.uiScale();
+    const g = ghost_where;
+    for (ghost_pts, 0..) |q, i| {
+        out[i] = .{ -1, -1, -1 };
+        const sp = terminal.petPoint(g[0], g[1], g[2], q[0], q[1]);
+        var area: c.SDL_Rect = .{ .x = @intFromFloat(@floor(sp.x * k)), .y = @intFromFloat(@floor(sp.y * k)), .w = 1, .h = 1 };
+        const surface = c.SDL_RenderReadPixels(app.win.renderer, &area) orelse continue;
+        defer c.SDL_DestroySurface(surface);
+        var r: u8 = 0;
+        var gg: u8 = 0;
+        var b: u8 = 0;
+        var a: u8 = 0;
+        if (c.SDL_ReadSurfacePixel(surface, 0, 0, &r, &gg, &b, &a)) out[i] = .{ @floatFromInt(r), @floatFromInt(gg), @floatFromInt(b) };
+    }
+}
+fn ghostSetup(app: *App) void {
+    app.st.settings.mascot_look.set("hat=crown");
+    app.st.settings.mascot_file.set("");
+    app.st.settings.mascot_life = 0;
+    app.st.settings.mascot_pet = true;
+    app.st.settings.my_status = 0;
+    pet.qaUnhide();
+    pet.qaHome();
+    pet.qaIdleFor(0, app.images.now_ms);
+    // O mouse longe dele e parado: os olhos e as orelhas não mexem entre as fotos.
+    c.ImGuiIO_AddMousePosEvent(app.io, 12, 12);
+}
+fn ghostReady(_: *App) bool {
+    return qa.find("pet") != null and look().hat == .crown and pet.qaDrawn()[2] > 0;
+}
+fn sampleSolid(app: *App) void {
+    ghost_where = pet.qaDrawn();
+    samplePet(app, &ghost_solid);
+}
+fn goInvisible(app: *App) void {
+    app.st.settings.my_status = 3;
+}
+fn sampleGhost(app: *App) void {
+    samplePet(app, &ghost_seen);
+}
+fn petOff(app: *App) void {
+    app.st.settings.mascot_pet = false;
+}
+fn sampleBehind(app: *App) void {
+    samplePet(app, &ghost_bg);
+}
+fn ghostDone(app: *App) void {
+    app.st.settings.mascot_pet = true;
+    app.st.settings.my_status = 0;
+}
+/// Cada pixel do invisível é a mistura do mascote opaco com o fundo, com o alpha do
+/// invisível: onde a orelha fica atrás do corpo também. Com o alpha em cada peça, ali a
+/// orelha aparecia através do corpo (uns 25% da diferença entre ela e o fundo a mais).
+fn ghostUniform(_: *App) bool {
+    const a = pet.ghost_alpha;
+    var contrast: f32 = 0;
+    var ok = true;
+    for (0..ghost_pts.len) |i| {
+        for (0..3) |ch| {
+            if (ghost_solid[i][ch] < 0 or ghost_seen[i][ch] < 0 or ghost_bg[i][ch] < 0) ok = false;
+            const want = a * ghost_solid[i][ch] + (1 - a) * ghost_bg[i][ch];
+            if (@abs(ghost_seen[i][ch] - want) > 6) ok = false;
+            if (i < behind_ear) contrast = @max(contrast, @abs(ghost_solid[i][ch] - ghost_bg[i][ch]));
+        }
+    }
+    // Mascote e fundo diferentes o bastante para a emenda de antes passar da tolerância.
+    if (contrast < 40) ok = false;
+    if (!ok) for (0..ghost_pts.len) |i| std.log.warn("ponto ({d}, {d}): opaco {any} invisível {any} fundo {any}", .{ ghost_pts[i][0], ghost_pts[i][1], ghost_solid[i], ghost_seen[i], ghost_bg[i] });
+    return ok;
+}
+
 pub const ops = [_]Op{
     s("mascote personalizado: a página"),
     run(clearFiles),
@@ -414,6 +559,28 @@ pub const ops = [_]Op{
     .{ .key = .{ .key = c.ImGuiKey_Enter } },
     expect("uma cor própria em hex", hexInk),
 } ++ snap(.stage, "mvis-09-cor-propria") ++ [_]Op{
+    s("altura dos olhos e da boca"),
+    run(clearLook),
+    run(stillPreview),
+    run(scrollTo(.stage)),
+    wait(400),
+    run(notePreview),
+    heightDrag("eyes", 0.99),
+    expect("arrastar a altura dos olhos sobe os olhos até o alto (um desfazer por arraste)", eyesTop),
+    expect("a prévia muda com a altura", previewChanged),
+    heightDrag("eyes", 0.01),
+    expect("os olhos descendo até embaixo levam a boca junto", eyesPushMouth),
+    expect("o settings.kdl guarda as alturas e elas voltam iguais", compactSaved),
+    heightDrag("mouth", 0.99),
+    expect("a boca subindo até em cima leva os olhos junto", mouthPushEyes),
+} ++ snap(.stage, "mvis-35-alturas") ++ [_]Op{
+    click("button:Padrão"),
+    expect("Padrão volta as alturas para o lugar de sempre", isDefault),
+    expect("e a prévia volta igual, pixel a pixel", previewSame),
+    click("button:Desfazer"),
+    expect("desfazer traz as alturas de volta", heightsBack),
+    run(motionBack),
+
     s("sortear, prontos, padrão e desfazer"),
     run(noteLook),
     click("button:Sortear visual"),
@@ -534,6 +701,22 @@ pub const ops = [_]Op{
     run(loginWith(0, 1, 1.9)),
     shot("mvis-34-abertura-codigo"),
     run(loginHide),
+
+    s("invisível: o mascote do canto some por igual"),
+    run(ghostSetup),
+    .{ .expect = .{ .name = "o mascote do canto de coroa", .check = ghostReady, .timeout_ms = 3000 } },
+    wait(500),
+    run(sampleSolid),
+    shot("mvis-36-canto-coroa"),
+    run(goInvisible),
+    wait(500),
+    run(sampleGhost),
+    shot("mvis-37-canto-invisivel"),
+    run(petOff),
+    wait(500),
+    run(sampleBehind),
+    expect("invisível: um fantasma só, sem a orelha aparecendo através do corpo", ghostUniform),
+    run(ghostDone),
     run(clearLook),
     expect("limpo: o de sempre de novo", defaultLook),
 };

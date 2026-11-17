@@ -62,6 +62,7 @@ Quatro chaves escolhem o que mais ele faz. O passeio precisa da vida própria li
 Configurações → Mascote → **Personalizar** veste o mascote Terminal. Uma prévia grande mostra o visual, e os botões embaixo dela trocam a cara (Normal, Feliz, Rindo, Susto, Bravo, Triste, Dormindo, Tonto) e põem o fone da call e a fita do mudo, para ver como as peças combinam.
 
 - **Visuais prontos**: 16 visuais completos, do Hacker ao Anjinho. **Sortear visual** escolhe um que combina, **Padrão** volta ao mascote de sempre e **Desfazer** desfaz a última troca.
+- **Altura dos olhos** e **Altura da boca**: dois controles embaixo dos botões sobem e descem os olhos e a boca no rosto. Levar um até o outro empurra o outro junto, então nunca ficam mais perto do que no desenho de sempre. **Padrão** volta os dois ao lugar.
 - **Olhos, Boca, Chapéu, Acessórios, Orelhas, Cores**: uma grade de imagens para cada. 15 olhos, 16 bocas, 22 chapéus, 12 acessórios (óculos e o que vai no pescoço, um de cada vez), 6 orelhas, 14 paletas, ou um hex seu para cada uma das cinco cores, ou a cor de destaque do tema.
 - O visual aparece onde o mascote aparece: nas aberturas, no Sobre, nas listas vazias e no mascote do canto. Com um chapéu escolhido, o mascote do canto não troca pelo das datas; **Chapéu nas datas**, em Mascote no canto, desliga esses. O mascote Clássico continua como é.
 

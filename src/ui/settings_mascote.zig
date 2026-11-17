@@ -85,11 +85,16 @@ fn pushUndo(s: *const S.Settings) void {
 /// Passa a usar `l` (o visual montado aqui): deixa de lado um arquivo escolhido (os
 /// desenhos dele continuam, pelo `draw=`) e guarda o de antes para desfazer.
 fn apply(ctx: *d.Ctx, l: visual.Look) void {
+    applyEx(ctx, l, true);
+}
+
+/// `undoable` falso: os passos seguintes de um mesmo arraste (um desfazer só por arraste).
+fn applyEx(ctx: *d.Ctx, l: visual.Look, undoable: bool) void {
     const s = &ctx.st.settings;
     var buf: [256]u8 = undefined;
     const text = visual.writeCompact(&l, &buf);
     if (std.mem.eql(u8, text, s.mascot_look.slice()) and s.mascot_file.len == 0) return;
-    pushUndo(s);
+    if (undoable) pushUndo(s);
     s.mascot_look.set(text);
     s.mascot_file.set("");
     changed_ms = ctx.now_ms;
@@ -456,7 +461,12 @@ fn stage(p: anytype) void {
     var bf = Flow.init(ix, iy + 18 + 30 + sum_h + 14, iw, 36, 8);
     var brs: [4]d.Rect = undefined;
     for (labels, 0..) |lb, i| brs[i] = bf.next(buttonWidth(p, lb));
-    const info_bottom = bf.bottom();
+    // A altura dos olhos e a da boca, embaixo dos botões.
+    const h_labels = [2][]const u8{ i18n.tr("Altura dos olhos", "Eye height"), i18n.tr("Altura da boca", "Mouth height") };
+    const hl_w = @min(@max(d.width(p.font(.medium), 14, h_labels[0]), d.width(p.font(.medium), 14, h_labels[1])), iw * 0.45);
+    var hrs: [2]d.Rect = undefined;
+    for (&hrs, 0..) |*hr, i| hr.* = .{ .x = ix, .y = bf.bottom() + 12 + @as(f32, @floatFromInt(i)) * (height_row + 4), .w = iw, .h = height_row };
+    const info_bottom = hrs[1].bottom();
     // As caras e o fone, embaixo de tudo, de ponta a ponta.
     const faces = [_]struct { f: visual.Face, pt: []const u8, en: []const u8 }{
         .{ .f = .prompt, .pt = "Normal", .en = "Normal" },
@@ -530,6 +540,7 @@ fn stage(p: anytype) void {
     }
     if (button(p, brs[2], 5, b_reset, false, !l.isDefault() or ctx.st.settings.mascot_file.len > 0)) apply(ctx, .{});
     if (button(p, brs[3], 6, b_save, false, true)) saveFile(ctx, &l);
+    for (hrs, 0..) |hr, i| heightSlider(p, hr, @intCast(i), h_labels[i], hl_w, &l);
 
     // As caras da prévia.
     var pb: [48]u8 = undefined;
@@ -555,6 +566,57 @@ fn stage(p: anytype) void {
         changed_ms = now;
     }
     p.y = card_r.bottom();
+}
+
+/// A altura de uma linha de altura (olhos ou boca) da prévia.
+const height_row: f32 = 30;
+/// O controle de altura sendo arrastado: o primeiro passo de cada arraste guarda o
+/// visual de antes para desfazer; os outros, não.
+var height_drag: ?u1 = null;
+
+/// A altura dos olhos (`which` = 0) ou da boca (1): o rótulo, o trilho com o zero (o
+/// lugar de sempre) marcado e o número. Os olhos descendo até a boca empurram a boca,
+/// e a boca subindo até os olhos empurra os olhos (ver `visual.Look.setEyeHeight`).
+fn heightSlider(p: anytype, r: d.Rect, which: u1, label: []const u8, label_w: f32, l: *const visual.Look) void {
+    const ctx = p.ctx;
+    const range = if (which == 0) visual.eye_height_range else visual.mouth_height_range;
+    const cur: i8 = if (which == 0) l.eye_height else l.mouth_height;
+    const lo: f32 = @floatFromInt(range[0]);
+    const hi: f32 = @floatFromInt(range[1]);
+    const fs = settings.fitSize(p.font(.medium), 14, 11, label, label_w);
+    const lw = d.textClipped(p.dl, p.font(.medium), fs, r.x, d.centerY(r, fs), ctx.col(.text), label, label_w);
+    p.markText(.{ .x = r.x, .y = d.centerY(r, fs), .w = lw, .h = fs + 4 });
+    const num_w: f32 = 30;
+    const track: d.Rect = .{ .x = r.x + label_w + 18, .y = r.y + r.h / 2 - 3, .w = @max(r.w - label_w - 18 - num_w - 14, 40), .h = 6 };
+    const hr: d.Rect = .{ .x = track.x - 8, .y = r.y, .w = track.w + 16, .h = r.h };
+    const hb = d.hit(ctx, base_id + 50 + @as(usize, which), hr);
+    qa.mark(hr, "mascot-height:{s}", .{if (which == 0) "eyes" else "mouth"});
+    if (hb.held) {
+        const t = std.math.clamp((ctx.mouse.x - track.x) / track.w, 0, 1);
+        const want: i8 = @intFromFloat(@round(lo + t * (hi - lo)));
+        if (want != cur) {
+            var nl = l.*;
+            if (which == 0) nl.setEyeHeight(want) else nl.setMouthHeight(want);
+            applyEx(ctx, nl, height_drag != which);
+            height_drag = which;
+        }
+    } else if (height_drag == which) height_drag = null;
+    // O trilho, a cor do zero até o valor, a marquinha do zero e o pegador.
+    const k = (@as(f32, @floatFromInt(cur)) - lo) / (hi - lo);
+    const k0 = -lo / (hi - lo);
+    d.rect(p.dl, track, ctx.col(.elevated).mix(ctx.col(.text), 0.08), 3);
+    const a = @min(k, k0);
+    const b = @max(k, k0);
+    if (b > a) d.rect(p.dl, .{ .x = track.x + track.w * a, .y = track.y, .w = track.w * (b - a), .h = track.h }, ctx.col(.accent), 3);
+    d.rect(p.dl, .{ .x = track.x + track.w * k0 - 1, .y = track.y - 4, .w = 2, .h = track.h + 8 }, ctx.col(.muted).alpha(0.7), 1);
+    const kx = track.x + track.w * k;
+    d.shadow(p.dl, .{ .x = kx - 6, .y = r.y + 4, .w = 12, .h = r.h - 8 }, 3, 3, ctx.col(.shadow));
+    d.rect(p.dl, .{ .x = kx - 5, .y = r.y + 5, .w = 10, .h = r.h - 10 }, Rgba.white, 3);
+    var nb: [8]u8 = undefined;
+    const num = (if (cur > 0) std.fmt.bufPrint(&nb, "+{d}", .{cur}) else std.fmt.bufPrint(&nb, "{d}", .{cur})) catch "";
+    const nw = d.width(p.font(.semibold), 13, num);
+    d.text(p.dl, p.font(.semibold), 13, r.right() - nw, d.centerY(r, 13), ctx.col(.muted), num);
+    p.markText(.{ .x = r.right() - nw, .y = d.centerY(r, 13), .w = nw, .h = 17 });
 }
 
 fn saveFile(ctx: *d.Ctx, l: *const visual.Look) void {

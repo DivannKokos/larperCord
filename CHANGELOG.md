@@ -22,6 +22,10 @@
 **Text in any language**
 - Russian: 341 texts that had been machine-translated (added from 0.6.2 to 0.6.6) are back in English, as placeholders waiting for a person to translate them; 63 more are being rewritten in DivannKokos's pull request (#29). Everything translated by pIat0n and DivannKokos stays. `tools/i18n_strings.py --lang ru --check` says how many are left, and the top of i18n/ru.kdl explains how to send a translation.
 
+**Mascot**
+- Invisible status: the corner mascot now fades as one figure. Each part used to fade on its own, so the ears showed through the body where they overlap and, with a hat on, looked like a pair of glasses. Now the whole mascot, hat and headset included, is drawn once and faded together. The Ctrl+C clone fades the same way.
+- Settings → Mascot → Customize has Eye height and Mouth height sliders that move the eyes and the mouth up or down on the face, for every eye and mouth style and for the drawings in mascot files. Moving one toward the other pushes it along, so they never get closer than in the usual drawing. Glasses, eye bags and the magnifier follow the eyes; the mustache, the mute tape and the gum follow the mouth. The heights show wherever the look does and are saved with it and by "Save as file" (`eye-height` and `mouth-height` in mascot files, see mascots/README.md). Default puts them back, and Undo takes back a whole drag. Japanese follows the new texts; the two new Russian lines stay in English until someone translates them.
+
 ## 0.6.6
 
 **Appearance**

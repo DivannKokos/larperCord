@@ -38,7 +38,7 @@ Isso já é um mascote inteiro: três linhas, nenhum desenho. Todo o resto abaix
 | Nó | O que faz |
 |---|---|
 | `mascot "nome" author=… license=… description=…` | as informações. O nome aparece na lista de arquivos |
-| `look eyes=… mouth=… hat=… ears=… accessories="…"` | peças da biblioteca (listas abaixo). O que ficar de fora continua o padrão |
+| `look eyes=… mouth=… hat=… ears=… accessories="…" eye-height=… mouth-height=…` | peças da biblioteca (listas abaixo) e onde ficam os olhos e a boca. O que ficar de fora continua o padrão |
 | `colors palette="…"` ou `colors body-top="#…" …` ou `colors theme=#true` | as cinco cores (abaixo) |
 | `eyes { … }` | olhos próprios, desenhados com formas. Valem no lugar de `look eyes=` |
 | `mouth { … }` | boca própria, desenhada com formas. Vale no lugar de `look mouth=` |
@@ -66,6 +66,18 @@ das datas.
 o último.
 
 **Orelhas** (`look ears=`): `pointy` (o padrão), `round`, `floppy`, `bunny`, `tiny`, `none`.
+
+**Altura dos olhos e da boca** (`look eye-height=` e `look mouth-height=`, números inteiros, nas unidades do
+desenho): sobem (positivo) ou descem (negativo) os olhos ou a boca no rosto, como os controles **Altura dos
+olhos** e **Altura da boca** do Personalizar. `0` (o padrão) é o lugar de sempre. Os olhos vão de −4 a 10 e a
+boca de −4 a 8; um número fora disso fica no limite. Os olhos nunca ficam mais perto da boca do que no desenho
+de sempre: `eye-height` é pelo menos `mouth-height`, e quando não é, os olhos sobem até a altura da boca. Os
+óculos, as olheiras e a lupa acompanham os olhos; o bigode, a fita do mudo e o chiclete acompanham a boca; os
+seus `eyes { … }` e `mouth { … }` também andam.
+
+```kdl
+look eyes="dots" mouth="cat" eye-height=4 mouth-height=-2
+```
 
 Todo olho e toda boca têm uma versão para cada expressão (feliz, rindo, susto, bravo, triste, dormindo, tonto,
 preocupado), e mais a piscada, o olhar, comendo e a cara de erro.

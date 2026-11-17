@@ -62,6 +62,7 @@ Four switches choose what else it does. Wandering needs a life of its own on, an
 Settings → Mascot → **Customize** dresses up the Terminal mascot. A big preview shows the look, and the buttons under it switch the face (Normal, Happy, Laughing, Startled, Angry, Sad, Asleep, Dizzy) and put on the call headset and the mute tape, so you see how the parts combine.
 
 - **Ready-made looks**: 16 complete looks, from Hacker to Little angel. **Random look** picks one that matches, **Default** goes back to the usual mascot and **Undo** takes back the last change.
+- **Eye height** and **Mouth height**: two sliders under the buttons move the eyes and the mouth up or down on the face. Moving one toward the other pushes it along, so they never get closer than in the usual drawing. **Default** puts them back.
 - **Eyes, Mouth, Hat, Accessories, Ears, Colors**: a grid of pictures for each. 15 eyes, 16 mouths, 22 hats, 12 accessories (glasses and neckwear one at a time), 6 ear shapes, 14 palettes, or your own hex for each of the five colors, or the theme's accent.
 - The look shows wherever the mascot does: the openings, About, the empty lists and the corner mascot. With a hat picked, the corner mascot doesn't switch to the holiday hat; **Holiday hats** under Corner mascot turns those off. The Classic mascot stays as it is.
 

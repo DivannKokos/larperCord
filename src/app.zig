@@ -635,6 +635,7 @@ pub const App = struct {
         app.store.deinit();
         send_limits.reset();
         app.themes.deinit();
+        @import("ui/camada.zig").shutdown();
         c.cImGui_ImplSDLRenderer3_Shutdown();
         c.cImGui_ImplSDL3_Shutdown();
         c.ImGui_DestroyContext(null);
@@ -3407,6 +3408,8 @@ pub const App = struct {
             const clear = [4]f32{ bg.r * bg.a, bg.g * bg.a, bg.b * bg.a, bg.a };
             const draw_data = c.ImGui_GetDrawData();
             if (@import("ui/video.zig").takeChanged()) app.gate.redraw();
+            // O mascote invisível vai numa textura que o resumo do quadro não vê.
+            if (@import("ui/camada.zig").takeChanged()) app.gate.redraw();
             // GIF que toca aos poucos: quadro novo na mesma textura, com o desenho igual.
             const gif_changed = app.images.takeChanged();
             // Igual ao que já está na tela: sem GPU nem present. Prints e QA leem os pixels.
@@ -3746,6 +3749,7 @@ pub const App = struct {
         const clear = [4]f32{ bg.r * bg.a, bg.g * bg.a, bg.b * bg.a, bg.a };
         const draw_data = c.ImGui_GetDrawData();
         if (@import("ui/video.zig").takeChanged()) app.gate.redraw();
+        if (@import("ui/camada.zig").takeChanged()) app.gate.redraw();
         const gif_changed = app.images.takeChanged();
         const show = app.gate.check(quadro.sum(draw_data, clear), gif_changed or wl.shot != null or quadro.texturesDirty(draw_data));
         if (show) {
