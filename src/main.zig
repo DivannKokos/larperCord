@@ -22,6 +22,7 @@ const Queue = @import("net/queue.zig").Queue;
 const timeline = @import("platform/timeline.zig");
 const instance = @import("platform/instance.zig");
 const apagar = @import("platform/apagar.zig");
+const web_client = @import("net/web_client.zig");
 
 const usage =
     \\larperCord — cliente de Discord nativo e leve
@@ -40,6 +41,8 @@ const usage =
     \\  --stats           mostra a linha do tempo da abertura e o custo de cada quadro
     \\  --voice-test G C  entra no canal de voz C do servidor G por 25 s
     \\  --tls-check URL   confere se a rede do app funciona neste sistema (certificados e WebSocket)
+    \\  --tls-fingerprint mostra a impressão TLS e HTTP/2 das conexões do app (tools/tls_check.sh)
+    \\  --ws-check [URL]  abre o WebSocket do gateway sem conta e mostra o primeiro quadro (HELLO)
     \\  --restarted       toma o lugar do larperCord que está fechando (usado ao reiniciar)
     \\  --version         mostra a versão e sai
     \\
@@ -101,6 +104,10 @@ pub fn main(init: std.process.Init.Minimal) !void {
             opts.stats = true;
         } else if (std.mem.eql(u8, arg, "--tls-check")) {
             return tlsCheck(it.next() orelse return fail("--tls-check precisa de um endereço"));
+        } else if (std.mem.eql(u8, arg, "--ws-check")) {
+            return wsCheck(it.next() orelse "wss://gateway.discord.gg/?v=9&encoding=json");
+        } else if (std.mem.eql(u8, arg, "--tls-fingerprint")) {
+            return tlsFingerprint(it.next() orelse "https://tls.peet.ws/api/all");
         } else if (std.mem.eql(u8, arg, "--voice-test")) {
             const g = it.next() orelse return fail("--voice-test precisa do servidor e do canal");
             const ch = it.next() orelse return fail("--voice-test precisa do servidor e do canal");
@@ -200,6 +207,76 @@ fn tlsCheck(url: [:0]const u8) void {
     }
     std.debug.print("libcurl {s}, WebSocket: {}\n", .{ info.*.version, ws });
     if (res != c.CURLE_OK or !ws) std.process.exit(1);
+}
+
+/// O WebSocket do gateway com o TLS das conexões de verdade (sys.curlTlsWebSocket), sem
+/// conta: o gateway manda o HELLO (op 10) antes de pedir o token.
+fn wsCheck(url: [:0]const u8) void {
+    _ = c.curl_global_init(c.CURL_GLOBAL_DEFAULT);
+    const h = c.curl_easy_init() orelse std.process.exit(1);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_URL, url.ptr);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECT_ONLY, @as(c_long, 2));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECTTIMEOUT, @as(c_long, 20));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_USERAGENT, web_client.user_agent);
+    sys.curlTlsWebSocket(h);
+    const res = c.curl_easy_perform(h);
+    if (res != c.CURLE_OK) {
+        std.debug.print("{s}: {s}\n", .{ url, c.curl_easy_strerror(res) });
+        std.process.exit(1);
+    }
+    var buf: [4096]u8 = undefined;
+    var tries: u32 = 0;
+    while (tries < 100) : (tries += 1) {
+        var got: usize = 0;
+        var meta: ?*const c.struct_curl_ws_frame = null;
+        const rc = c.curl_ws_recv(h, &buf, buf.len, &got, &meta);
+        if (rc == c.CURLE_AGAIN) {
+            c.SDL_Delay(100);
+            continue;
+        }
+        if (rc != c.CURLE_OK) break;
+        std.debug.print("{s}: {s}\n", .{ url, buf[0..@min(got, 120)] });
+        return;
+    }
+    std.debug.print("{s}: o gateway não mandou nada\n", .{url});
+    std.process.exit(1);
+}
+
+/// A impressão que as nossas conexões deixam (TLS e HTTP/2), vista por um site que
+/// devolve o que recebeu: o mesmo `sys.curlTls` e o mesmo User-Agent dos pedidos ao
+/// Discord, sem token nenhum. tools/tls_check.sh compara com a de um Chrome.
+fn tlsFingerprint(url: [:0]const u8) void {
+    _ = c.curl_global_init(c.CURL_GLOBAL_DEFAULT);
+    const h = c.curl_easy_init() orelse std.process.exit(1);
+    var body: std.ArrayList(u8) = .empty;
+    _ = c.curl_easy_setopt(h, c.CURLOPT_URL, url.ptr);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_PROTOCOLS_STR, "https");
+    _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECTTIMEOUT, @as(c_long, 20));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_TIMEOUT, @as(c_long, 30));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_USERAGENT, web_client.user_agent);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_ACCEPT_ENCODING, sys.acceptEncoding());
+    _ = c.curl_easy_setopt(h, c.CURLOPT_WRITEFUNCTION, keepBody);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_WRITEDATA, &body);
+    // O site não é do Discord, mas a medida é a que o Discord vê (com o ALPS).
+    const tls_chrome = @import("build_options").tls_chrome;
+    if (tls_chrome) c.larper_tls_alps_everywhere();
+    var err_buf: [c.CURL_ERROR_SIZE]u8 = @splat(0);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_ERRORBUFFER, &err_buf);
+    sys.curlTls(h);
+    const res = c.curl_easy_perform(h);
+    if (res != c.CURLE_OK) {
+        const detail = std.mem.sliceTo(&err_buf, 0);
+        const alps = tls_chrome and c.larper_tls_alps_refused() != 0;
+        std.debug.print("{s}: {s} ({s}){s}\n", .{ url, c.curl_easy_strerror(res), detail, if (alps) " — o servidor aceitou o ALPS" else "" });
+        std.process.exit(1);
+    }
+    std.debug.print("{s}\n", .{body.items});
+}
+
+fn keepBody(ptr: [*c]u8, size: usize, n: usize, ud: ?*anyopaque) callconv(.c) usize {
+    const list: *std.ArrayList(u8) = @ptrCast(@alignCast(ud));
+    list.appendSlice(std.heap.c_allocator, ptr[0 .. size * n]) catch return 0;
+    return size * n;
 }
 
 fn watchdog(_: ?*anyopaque) callconv(.c) c_int {

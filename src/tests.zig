@@ -63,6 +63,8 @@ test {
     _ = @import("net/voice_info_json.zig");
     _ = @import("net/voz_movido.zig");
     _ = @import("net/saida_servidor.zig");
+    _ = @import("net/registro_rede.zig");
+    _ = @import("net/tls_ja4.zig");
     _ = @import("net/limits_json.zig");
     _ = @import("core/conta.zig");
     _ = @import("theme/kdl.zig");
