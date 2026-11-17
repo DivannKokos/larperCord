@@ -100,6 +100,37 @@ const freetype_sources = [_][]const u8{
 
 const theme_names = [_][]const u8{ "classico", "vidro", "terminal", "subsolo", "orbital", "editorial", "bolhas", "zen", "papel", "escritorio", "cupertino" };
 
+/// Os textos grandes que vão dentro do executável (as traduções, o changelog, a tabela de
+/// emoji), comprimidos na hora do build (tools/comprimir.zig): abrem quando alguém
+/// precisa (src/core/embutido.zig). Uma vez só por build, para todos os módulos.
+const packed_files = [_][3][]const u8{
+    .{ "changelog_en_z", "CHANGELOG.md", "changelog_en.z" },
+    .{ "changelog_pt_z", "CHANGELOG.pt-BR.md", "changelog_pt.z" },
+    .{ "i18n_ja_z", "i18n/ja.kdl", "ja.kdl.z" },
+    .{ "i18n_ru_z", "i18n/ru.kdl", "ru.kdl.z" },
+    .{ "emoji_blob", "src/ui/emoji_blob.txt", "emoji_blob.z" },
+};
+var packed_paths: ?[packed_files.len]std.Build.LazyPath = null;
+
+fn addPacked(b: *std.Build, m: *std.Build.Module) void {
+    const paths = packed_paths orelse blk: {
+        const tool = b.addExecutable(.{ .name = "comprimir", .root_module = b.createModule(.{
+            .root_source_file = b.path("tools/comprimir.zig"),
+            .target = b.graph.host,
+            .optimize = .ReleaseSafe,
+        }) });
+        var out: [packed_files.len]std.Build.LazyPath = undefined;
+        for (packed_files, &out) |f, *o| {
+            const run = b.addRunArtifact(tool);
+            run.addFileArg(b.path(f[1]));
+            o.* = run.addOutputFileArg(f[2]);
+        }
+        packed_paths = out;
+        break :blk out;
+    };
+    for (packed_files, paths) |f, path| m.addAnonymousImport(f[0], .{ .root_source_file = path });
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     // Padrão: ReleaseFast (o de debug desenha cada quadro ~4x mais devagar).
@@ -172,6 +203,7 @@ pub fn build(b: *std.Build) void {
     // Traduções além do português e do inglês: um arquivo por idioma (src/ui/i18n.zig).
     mod.addAnonymousImport("i18n_ja", .{ .root_source_file = b.path("i18n/ja.kdl") });
     mod.addAnonymousImport("i18n_ru", .{ .root_source_file = b.path("i18n/ru.kdl") });
+    addPacked(b, mod);
     mod.addImport("c", translate.createModule());
     mod.addImport("builtin_themes", builtin_themes);
     mod.addImport("plugin_examples", plugin_examples);
@@ -358,6 +390,7 @@ pub fn build(b: *std.Build) void {
     test_mod.addAnonymousImport("changelog_pt", .{ .root_source_file = b.path("CHANGELOG.pt-BR.md") });
     test_mod.addAnonymousImport("i18n_ja", .{ .root_source_file = b.path("i18n/ja.kdl") });
     test_mod.addAnonymousImport("i18n_ru", .{ .root_source_file = b.path("i18n/ru.kdl") });
+    addPacked(b, test_mod);
     addLua(b, test_mod);
     addRnnoise(b, test_mod);
     addFribidi(b, test_mod);
@@ -607,6 +640,7 @@ fn webModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.buil
     m.addAnonymousImport("changelog_pt", .{ .root_source_file = b.path("CHANGELOG.pt-BR.md") });
     m.addAnonymousImport("i18n_ja", .{ .root_source_file = b.path("i18n/ja.kdl") });
     m.addAnonymousImport("i18n_ru", .{ .root_source_file = b.path("i18n/ru.kdl") });
+    addPacked(b, m);
     m.addAnonymousImport("icon_64", .{ .root_source_file = b.path("assets/icon-64.png") });
     m.addAnonymousImport("icon_32", .{ .root_source_file = b.path("assets/icon-32.png") });
     m.addAnonymousImport("icon_128", .{ .root_source_file = b.path("assets/icon-128.png") });

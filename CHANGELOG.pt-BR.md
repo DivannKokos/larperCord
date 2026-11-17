@@ -16,6 +16,9 @@
 - Com o registro de depuração ligado (Configurações → Avançado), cada pedido à API do Discord (método, caminho e status) e cada op que sai pelo gateway (o número e o servidor) ficam anotados, sem token nem conteúdo, para ver o que o app mandou se a conta for marcada de novo.
 - `--tls-fingerprint` mostra a impressão TLS e HTTP/2 do app, como um site que devolve o que recebeu a vê, e tools/tls_check.sh compara com a do Chrome. Nenhum dos dois usa token.
 
+**Mais leve**
+- O arquivo do app ficou uns 360 KB menor: as traduções em japonês e russo, o changelog e a tabela de emoji vão dentro dele comprimidos e só abrem quando precisa (ao escolher o idioma, abrir Atualizações ou aparecer o primeiro emoji). O último emoji da tabela, a bandeira do País de Gales, não lê mais um byte além do fim dela.
+
 ## 0.6.6
 
 **Aparência**

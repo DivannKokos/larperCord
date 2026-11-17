@@ -65,6 +65,7 @@ test {
     _ = @import("net/saida_servidor.zig");
     _ = @import("net/registro_rede.zig");
     _ = @import("net/tls_ja4.zig");
+    _ = @import("core/embutido.zig");
     _ = @import("net/limits_json.zig");
     _ = @import("core/conta.zig");
     _ = @import("theme/kdl.zig");

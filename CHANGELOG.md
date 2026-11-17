@@ -16,6 +16,9 @@
 - With the debug log on (Settings → Advanced), each request to Discord's API (method, path and status) and each gateway op that goes out (its number and server) is written down, with no token or content, to see what the app sent if the account ever gets flagged again.
 - `--tls-fingerprint` prints the app's TLS and HTTP/2 fingerprint, as a site that echoes it back sees it, and tools/tls_check.sh compares it with Chrome's. Neither uses a token.
 
+**Lighter**
+- The app file is about 360 KB smaller: the Japanese and Russian translations, the changelog and the emoji table go inside it compressed and only open when needed (when you pick the language, open Updates, or the first emoji shows up). The last emoji of the table, the Wales flag, no longer reads one byte past its end.
+
 ## 0.6.6
 
 **Appearance**

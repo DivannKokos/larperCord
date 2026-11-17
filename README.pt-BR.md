@@ -292,7 +292,7 @@ Nada de mágica, só muitas decisões pequenas:
 8. **No Linux, o fontconfig é liberado** depois de resolver as fontes (`FcFini` + `malloc_trim`). O
    Windows não tem fontconfig: as fontes são abertas direto de `C:\Windows\Fonts`.
 9. **Sem cursor piscando**: o cursor piscando sozinho manteria a CPU acordada.
-10. **Binário enxuto**: build release sem símbolos de debug. O arquivo para Linux tem cerca de 14 MB com SDL3, libcurl e OpenSSL dentro, compilados só com as partes que o app usa e sem símbolos exportados, e cerca de 8 MB usando as cópias do sistema. No Windows, esses três vão como DLLs ao lado do `.exe`.
+10. **Binário enxuto**: build release sem símbolos de debug. O arquivo para Linux tem cerca de 16 MB com SDL3, libcurl e OpenSSL dentro, compilados só com as partes que o app usa e sem símbolos exportados, e cerca de 10 MB usando as cópias do sistema. No Windows, esses três vão como DLLs ao lado do `.exe`. Os maiores textos lá dentro (as traduções em japonês e russo, o changelog, a tabela de emoji) vão comprimidos e só abrem quando precisa.
 
 ## Compilando
 
