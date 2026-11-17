@@ -1812,14 +1812,12 @@ pub const Gateway = struct {
         return out.toOwnedSlice(alloc) catch null;
     }
 
-    /// Imagem grande da atividade como URL que o cache de imagens aceita:
-    /// "mp:external/…" vem pelo proxy de mídia, o número é um asset da
-    /// aplicação. Spotify ("spotify:…") e outros de fora ficam sem imagem.
+    /// Imagem grande da atividade como URL que o cache de imagens aceita. As regras
+    /// ("mp:external/…" pelo proxy de mídia, o número como asset da aplicação no CDN
+    /// e a capa do Spotify "spotify:<id>" direto na CDN deles, i.scdn.co) ficam no
+    /// `media_url`, testadas no `zig build test`.
     fn activityImage(buf: []u8, app: Id, key: []const u8) []const u8 {
-        if (std.mem.startsWith(u8, key, "mp:")) return std.fmt.bufPrint(buf, "https://media.discordapp.net/{s}", .{key[3..]}) catch "";
-        if (key.len == 0 or app == 0) return "";
-        for (key) |ch| if (!std.ascii.isDigit(ch)) return "";
-        return std.fmt.bufPrint(buf, "https://cdn.discordapp.com/app-assets/{d}/{s}.png", .{ app, key }) catch "";
+        return media_url.activityImage(buf, app, key);
     }
 
     /// Presenças podem vir como PresenceUpdate (com `user`) ou como
