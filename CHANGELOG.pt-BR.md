@@ -5,6 +5,9 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Mensagens**
+- Mensagem com um `*` sozinho (ou `**`, `~~`, `||` sem nada que feche) não some mais: o marcador se engolia e levava o resto da mensagem para o estilo, então uma mensagem que era só "*" aparecia vazia. Agora o marcador só dá estilo quando tem par, como no Discord, e senão aparece como foi digitado. `2 * 3 * 4` também aparece como foi digitado.
+
 ## 0.6.6
 
 **Aparência**

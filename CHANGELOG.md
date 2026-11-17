@@ -5,6 +5,9 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Messages**
+- A message with a lone `*` (or `**`, `~~`, `||` with nothing to close it) no longer vanishes: the marker used to swallow itself and turn the rest of the message into that style, so a message that was just "*" came out empty. Now a marker only styles text when there is one to close it, like Discord, and otherwise shows as typed. `2 * 3 * 4` shows as typed too.
+
 ## 0.6.6
 
 **Appearance**
