@@ -3138,9 +3138,21 @@ pub const App = struct {
                     if (e.type == c.SDL_EVENT_DROP_POSITION) @import("ui/mascote_pet.zig").onDragOver(now());
                     if (e.type == c.SDL_EVENT_WINDOW_RESIZED) @import("ui/mascote_pet.zig").onResize();
                     if (e.type == c.SDL_EVENT_DROP_FILE and app.store.ready and app.st.activeChannel() != null) {
-                        if (e.drop.data) |p| app.attachFile(std.mem.span(p));
-                        @import("ui/mascote_pet.zig").onDrop(now());
+                        // Solta em cima do mascote, uma imagem vira um quadro na mão dele (e vai
+                        // para a bandeja do mesmo jeito). O ponto vem em pixels da janela.
+                        const before = app.st.uploads.items.len;
+                        const path: []const u8 = if (e.drop.data) |p| std.mem.span(p) else "";
+                        if (path.len > 0) app.attachFile(path);
+                        const ups = app.st.uploads.items;
+                        const image = ups.len > before and ups[ups.len - 1].width > 0;
+                        const sc = app.uiScale();
+                        @import("ui/mascote_pet.zig").onDropFile(path, image, e.drop.x / sc, e.drop.y / sc, now());
                     }
+                    // Texto solto na janela: um link em cima do mascote entra num portalzinho.
+                    if (e.type == c.SDL_EVENT_DROP_TEXT) if (e.drop.data) |p| {
+                        const sc = app.uiScale();
+                        @import("ui/mascote_pet.zig").onDropText(std.mem.span(p), e.drop.x / sc, e.drop.y / sc, now());
+                    };
                 }
                 got = c.SDL_PollEvent(&e);
             }

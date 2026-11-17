@@ -1536,6 +1536,14 @@ pub fn petPoint(cx: f32, cy: f32, size: f32, x: f32, y: f32) c.ImVec2 {
     return d.v(cx + (x - mid_x) * k, cy + (y - mid_y) * k);
 }
 
+/// A cor das patinhas do mascote do canto (as brincadeiras, em ui/mascote_pet.zig): a do
+/// alto do corpo, um pouco mais clara para aparecer na frente dele (a mesma conta de `pet`).
+pub fn petTone(pl: PetLook) Rgba {
+    const tones = look.colorsFor(accent, true);
+    const cols = if (look.paint == .brand) pl.colors orelse [2]Rgba{ head_top, head_bottom } else [2]Rgba{ tones[0], tones[1] };
+    return cols[0].mix(Rgba.hex(0xFFFFFF), 0.22);
+}
+
 /// O mascote do canto centrado em (cx, cy).
 pub fn pet(dl: *c.ImDrawList, cx: f32, cy: f32, size: f32, pl: PetLook) void {
     const k = size * 0.78 / body_w;
