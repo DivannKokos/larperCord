@@ -42,6 +42,7 @@ const usage =
     \\  --voice-test G C  entra no canal de voz C do servidor G por 25 s
     \\  --tls-check URL   confere se a rede do app funciona neste sistema (certificados e WebSocket)
     \\  --tls-fingerprint mostra a impressão TLS e HTTP/2 das conexões do app (tools/tls_check.sh)
+    \\  --ws-check [URL]  abre o WebSocket do gateway sem conta e mostra o primeiro quadro (HELLO)
     \\  --restarted       toma o lugar do larperCord que está fechando (usado ao reiniciar)
     \\  --version         mostra a versão e sai
     \\
@@ -103,6 +104,8 @@ pub fn main(init: std.process.Init.Minimal) !void {
             opts.stats = true;
         } else if (std.mem.eql(u8, arg, "--tls-check")) {
             return tlsCheck(it.next() orelse return fail("--tls-check precisa de um endereço"));
+        } else if (std.mem.eql(u8, arg, "--ws-check")) {
+            return wsCheck(it.next() orelse "wss://gateway.discord.gg/?v=9&encoding=json");
         } else if (std.mem.eql(u8, arg, "--tls-fingerprint")) {
             return tlsFingerprint(it.next() orelse "https://tls.peet.ws/api/all");
         } else if (std.mem.eql(u8, arg, "--voice-test")) {
@@ -204,6 +207,39 @@ fn tlsCheck(url: [:0]const u8) void {
     }
     std.debug.print("libcurl {s}, WebSocket: {}\n", .{ info.*.version, ws });
     if (res != c.CURLE_OK or !ws) std.process.exit(1);
+}
+
+/// O WebSocket do gateway com o TLS das conexões de verdade (sys.curlTlsWebSocket), sem
+/// conta: o gateway manda o HELLO (op 10) antes de pedir o token.
+fn wsCheck(url: [:0]const u8) void {
+    _ = c.curl_global_init(c.CURL_GLOBAL_DEFAULT);
+    const h = c.curl_easy_init() orelse std.process.exit(1);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_URL, url.ptr);
+    _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECT_ONLY, @as(c_long, 2));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECTTIMEOUT, @as(c_long, 20));
+    _ = c.curl_easy_setopt(h, c.CURLOPT_USERAGENT, web_client.user_agent);
+    sys.curlTlsWebSocket(h);
+    const res = c.curl_easy_perform(h);
+    if (res != c.CURLE_OK) {
+        std.debug.print("{s}: {s}\n", .{ url, c.curl_easy_strerror(res) });
+        std.process.exit(1);
+    }
+    var buf: [4096]u8 = undefined;
+    var tries: u32 = 0;
+    while (tries < 100) : (tries += 1) {
+        var got: usize = 0;
+        var meta: ?*const c.struct_curl_ws_frame = null;
+        const rc = c.curl_ws_recv(h, &buf, buf.len, &got, &meta);
+        if (rc == c.CURLE_AGAIN) {
+            c.SDL_Delay(100);
+            continue;
+        }
+        if (rc != c.CURLE_OK) break;
+        std.debug.print("{s}: {s}\n", .{ url, buf[0..@min(got, 120)] });
+        return;
+    }
+    std.debug.print("{s}: o gateway não mandou nada\n", .{url});
+    std.process.exit(1);
 }
 
 /// A impressão que as nossas conexões deixam (TLS e HTTP/2), vista por um site que
