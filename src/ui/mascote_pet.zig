@@ -690,7 +690,7 @@ fn reactionSeconds(r: Reaction) f32 {
         .startle => 0.6,
         .tea, .pat => 2.4,
         .prompt => 1.4,
-        .meow => 1.6,
+        .meow, .named => 1.6,
         .sudo => 1.8,
         .rm => 2.1,
         // O 1 cai e levanta; o 20 comemora com confete.
@@ -1039,12 +1039,13 @@ pub fn draw(ctx: *d.Ctx) void {
             s.box_ms = now;
         }
         // Um segredo que acabou de aparecer na caixa: a reação dele.
-        const eggs = reacoes.eggsIn(text);
+        const eggs = reacoes.eggsWithName(text, mascote.name());
         if (typing_on and s.mode == .home and !s.nap) if (reacoes.newEgg(s.eggs, eggs)) |e| start(switch (e) {
             .rm => .rm,
             .sudo => .sudo,
             .meow => .meow,
             .prompt => .prompt,
+            .name => .named,
         }, now);
         s.eggs = eggs;
     }
@@ -1779,7 +1780,7 @@ pub fn draw(ctx: *d.Ctx) void {
                 pl.cursor = @mod(now, 200) < 110;
                 bob = -kick(rt, 0.5) * size * 0.3;
             },
-            .meow => {
+            .meow, .named => {
                 pl.face = .happy;
                 pl.ears = -0.35;
                 pl.mouth = 0.35;
@@ -2273,8 +2274,13 @@ pub fn draw(ctx: *d.Ctx) void {
     badge(dl, status, cx, cy_fx, size, asleep);
     // O balão de fala.
     if (now < s.balloon_until) props.balloon(dl, ctx.ui.get(.medium), d.v(cx, cy_fx - size * 0.62), i18n.tr("Senti saudade!", "Missed you!"), ctx.col(.elevated), ctx.col(.text), 1, ctx.win);
-    if (s.mode == .home and (s.react == .meow or s.react == .found)) {
-        const msg = if (s.react == .meow) i18n.tr("miau!", "meow!") else i18n.tr("Achou!", "You found me!");
+    if (s.mode == .home and (s.react == .meow or s.react == .found or s.react == .named)) {
+        const msg = switch (s.react) {
+            .meow => i18n.tr("miau!", "meow!"),
+            // Escreveram o nome dele na caixa (Personalizar → Nome).
+            .named => i18n.tr("Me chamou?", "You called?"),
+            else => i18n.tr("Achou!", "You found me!"),
+        };
         const fade = std.math.clamp((reactionSeconds(s.react) - rt) / 0.25, 0, 1);
         props.balloon(dl, ctx.ui.get(.medium), d.v(cx, cy_fx - size * 0.62), msg, ctx.col(.elevated), ctx.col(.text), fade, ctx.win);
     }
@@ -2319,7 +2325,6 @@ fn boxProps(ctx: *d.Ctx, dl: *c.ImDrawList, pose: reacoes.Pose, body: props.Body
     const term = kind == .terminal;
     const kb = body.k();
     const tone = terminal.petTone(pl);
-    const eye_dy: f32 = if (term) terminal.look.eyeDy() else 0;
     // O rosto anda com o olhar (ver mascote_terminal.faceOf).
     const fx = pl.look[0] * 4.9;
     const fy = pl.look[1] * 2.6;
@@ -2332,12 +2337,19 @@ fn boxProps(ctx: *d.Ctx, dl: *c.ImDrawList, pose: reacoes.Pose, body: props.Body
             props.paw(dl, body.p(109, y), 15 * kb, tone);
         },
         .spoiler => if (term) {
-            // Sobem de baixo até cobrir os olhos.
+            // Sobem de baixo até cobrir os olhos (onde os olhos estiverem: Personalizar
+            // muda o lugar, o espaço, o desalinhado e a altura deles).
             const y = (1 - enter) * 40;
-            props.paw(dl, body.p(40 + fx, 51 + eye_dy + fy + y), 15 * kb, tone);
-            props.paw(dl, body.p(84 + fx, 55 + eye_dy + fy + y), 15 * kb, tone);
+            const el = terminal.look.eyeCenter(-1);
+            const er = terminal.look.eyeCenter(1);
+            props.paw(dl, body.p(el[0] + fx, el[1] + fy + y), 15 * kb, tone);
+            props.paw(dl, body.p(er[0] + fx, er[1] + fy + y), 15 * kb, tone);
         },
-        .code => if (term) props.glasses(dl, body.p(40 + fx, 51 + eye_dy + fy), body.p(84 + fx, 55 + eye_dy + fy), 13 * kb),
+        .code => if (term) {
+            const el = terminal.look.eyeCenter(-1);
+            const er = terminal.look.eyeCenter(1);
+            props.glasses(dl, body.p(el[0] + fx, el[1] + fy), body.p(er[0] + fx, er[1] + fy), 13 * kb * terminal.look.eyeScale());
+        },
         .long, .full => {
             // O pergaminho em cima da cabeça, desenrolando com o texto; perto do limite,
             // ele se afasta e o pergaminho fica de lado.
@@ -2433,10 +2445,13 @@ fn reactProps(ctx: *d.Ctx, dl: *c.ImDrawList, body: props.Body, kind: mascote.Ki
             if (es < 1) return;
             const reactors = @import("reactors.zig");
             if (term) {
-                const eye_dy = terminal.look.eyeDy();
-                const spots: []const [2]f32 = if (terminal.look.eyes == .cyclops) &.{.{ 62, 57 }} else &.{ .{ 40, 51 }, .{ 84, 55 } };
+                // Onde os olhos estiverem (Personalizar muda o lugar deles).
+                const look = &terminal.look;
+                const cyc = look.eyeShift(.{ 62, 57 }, 0);
+                const spots_buf = [_][2]f32{ look.eyeCenter(-1), look.eyeCenter(1) };
+                const spots: []const [2]f32 = if (look.eyes == .cyclops) &.{.{ 62 + cyc[0], 57 + cyc[1] }} else &spots_buf;
                 for (spots) |e| {
-                    const p = body.p(e[0], e[1] + eye_dy);
+                    const p = body.p(e[0], e[1]);
                     _ = reactors.drawEmoji(ctx, dl, &s.treat, p.x - es / 2, p.y, es, false);
                 }
             } else {

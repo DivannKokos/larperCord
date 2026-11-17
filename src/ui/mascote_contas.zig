@@ -82,6 +82,8 @@ pub const Reaction = enum {
     pat,
     prompt,
     meow,
+    /// O nome dele (Personalizar → Nome) escrito na caixa.
+    named,
     sudo,
     rm,
     // Brincadeiras: o d20 do envio, o emoji, o link e a imagem arrastados até ele, achado

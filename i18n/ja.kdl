@@ -2016,6 +2016,7 @@
 "wrote too much" "書き込みすぎました"
 "yesterday" "昨日"
 "Yesterday at {s}" "昨日 {s}"
+"You called?" "呼んだ？"
 "You can add friends with their Discord username." "Discordのユーザー名でフレンドを追加できます。"
 "You can manage messages or the channel: slowmode doesn't apply to you." "メッセージまたはチャンネルの管理権限があるため、低速モードは適用されません。"
 "You can reply by DM" "DMで返信してもよい"

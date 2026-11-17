@@ -197,7 +197,7 @@ fn pointOf(t: []const u8) Point {
 
 /// Os segredos da caixa, cada um com a sua reação (uma vez, até sair da caixa e voltar).
 /// A ordem é a de quem ganha quando aparecem dois juntos.
-pub const Egg = enum(u3) { rm, sudo, meow, prompt };
+pub const Egg = enum(u3) { rm, sudo, meow, prompt, name };
 
 fn eggBit(e: Egg) u8 {
     return @as(u8, 1) << @backingInt(e);
@@ -213,6 +213,30 @@ pub fn eggsIn(text: []const u8) u8 {
         std.mem.indexOf(u8, t, "Мяу") != null or std.mem.indexOf(u8, t, "МЯУ") != null or std.mem.indexOf(u8, t, "にゃ") != null) m |= eggBit(.meow);
     if (std.mem.indexOf(u8, t, ">_") != null) m |= eggBit(.prompt);
     return m;
+}
+
+/// Os segredos e mais o nome do mascote (Personalizar → Nome), como palavra inteira e
+/// sem diferença de maiúsculas: "Bob" chama, "Bobagem" não.
+pub fn eggsWithName(text: []const u8, name: []const u8) u8 {
+    return eggsIn(text) | (if (nameIn(text[0..@min(text.len, 4000)], name)) eggBit(.name) else 0);
+}
+
+fn nameIn(text: []const u8, name: []const u8) bool {
+    const n = std.mem.trim(u8, name, " ");
+    if (n.len < 2 or n.len > text.len) return false;
+    var i: usize = 0;
+    while (i + n.len <= text.len) : (i += 1) {
+        if (!std.ascii.eqlIgnoreCase(text[i .. i + n.len], n)) continue;
+        const before_ok = i == 0 or !wordByte(text[i - 1]);
+        const after_ok = i + n.len == text.len or !wordByte(text[i + n.len]);
+        if (before_ok and after_ok) return true;
+    }
+    return false;
+}
+
+/// Letra, número, "_" ou parte de um caractere não ASCII: continua a palavra.
+fn wordByte(ch: u8) bool {
+    return std.ascii.isAlphanumeric(ch) or ch == '_' or ch >= 0x80;
 }
 
 /// O segredo que acabou de aparecer (estava fora em `before` e está em `now`).
@@ -405,6 +429,17 @@ test "a ordem das poses: o limite, o spoiler, o código, as maiúsculas" {
     try tt.expectEqual(Pose.spoiler, poseFor(box("```\nfoo\n``` ||x||")));
     try tt.expectEqual(Pose.code, poseFor(box("```\nPARA DE GRITAR\n```")));
     try tt.expectEqual(Pose.code, poseFor(box("```py\nCONST = 1\n``` E AGORA")));
+}
+
+test "o nome do mascote chama ele, como palavra inteira" {
+    try tt.expectEqual(@as(?Egg, .name), newEgg(0, eggsWithName("oi bob, tudo bem?", "Bob")));
+    try tt.expectEqual(@as(?Egg, .name), newEgg(0, eggsWithName("BOB", "Bob")));
+    try tt.expectEqual(@as(?Egg, null), newEgg(0, eggsWithName("que bobagem", "Bob")));
+    try tt.expectEqual(@as(?Egg, null), newEgg(0, eggsWithName("bob", "")));
+    try tt.expectEqual(@as(?Egg, null), newEgg(0, eggsWithName("x", "x")));
+    try tt.expectEqual(@as(?Egg, .name), newEgg(0, eggsWithName("olá Pixel Gato!", "Pixel Gato")));
+    // Junto com outro segredo, o outro ganha (o nome é o último).
+    try tt.expectEqual(@as(?Egg, .meow), newEgg(0, eggsWithName("miau bob", "bob")));
 }
 
 test "os segredos: cada um uma vez, até sair da caixa" {
