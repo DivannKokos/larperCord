@@ -3309,7 +3309,7 @@ pub const App = struct {
             ffmpeg.setDir(set.ffmpeg_dir.slice());
             voz_audio.apply(set);
             lsp_ui.apply(set);
-            mascote.sync(set.mascot_look.slice(), set.mascot_file.slice(), app.themes.theme_().c(.accent));
+            mascote.sync(set.mascot_look.slice(), set.mascot_tweaks.slice(), set.mascot_name.slice(), set.mascot_file.slice(), app.themes.theme_().c(.accent));
             app_presenca.frame(app);
             app.askChannelInfo();
             voz_audio.setPageOpen(set.open and set.page == .voz and app.store.ready);
@@ -3678,7 +3678,7 @@ pub const App = struct {
             app.st.theme_gen +%= 1;
         }
         anim.instant = set.reduce_motion;
-        mascote.sync(set.mascot_look.slice(), set.mascot_file.slice(), app.themes.theme_().c(.accent));
+        mascote.sync(set.mascot_look.slice(), set.mascot_tweaks.slice(), set.mascot_name.slice(), set.mascot_file.slice(), app.themes.theme_().c(.accent));
         plugin_host.frame(app);
         @import("ui/attachments.zig").hide_embeds = !set.show_embeds;
         app.store.keep_log = set.message_log;

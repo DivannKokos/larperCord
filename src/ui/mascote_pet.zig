@@ -35,6 +35,7 @@ const anim = @import("anim.zig");
 const qa = @import("qa.zig");
 const mascote = @import("mascote.zig");
 const terminal = @import("mascote_terminal.zig");
+const visual = @import("mascote_visual.zig");
 const logo = @import("logo.zig");
 const contas = @import("mascote_contas.zig");
 const types = @import("../core/types.zig");
@@ -906,6 +907,9 @@ pub fn draw(ctx: *d.Ctx) void {
     const released = c.ImGui_IsItemDeactivated();
     c.ImGui_End();
     qa.markTop(hit_box, "pet", .{});
+    // O nome dele ao parar o mouse em cima: só o Terminal (o do Personalizar), em casa e
+    // sem estar sendo arrastado.
+    nameTip(ctx, hovered and !active and at_home and mascote.Kind.of(set.mascot) == .terminal, size, now);
     if (hovered or active) c.ImGui_SetMouseCursor(if (active and s.dragging) c.ImGuiMouseCursor_ResizeAll else c.ImGuiMouseCursor_Hand);
 
     // Botão direito: o menu dele (truque, dormir, esconder, trocar de mascote).
@@ -1841,7 +1845,7 @@ pub fn draw(ctx: *d.Ctx) void {
             if (g < 1) props.letter(dl, d.v(from.x + (to.x - from.x) * g, from.y + (to.y - from.y) * g - @sin(std.math.pi * g) * 20), 18 * (1 - g * 0.5), g * 6);
         };
     }
-    effects(dl, now, cx, cy_fx, size, asleep, sleep_from, rt, if (kind == .terminal) terminal.look.eyeDy() else 0);
+    effects(dl, now, cx, cy_fx, size, asleep, sleep_from, rt, if (kind == .terminal) terminal.look.eyeCenter(1) else visual.eye_r);
     badge(dl, status, cx, cy_fx, size, asleep);
     // O balão de fala.
     if (now < s.balloon_until) props.balloon(dl, ctx.ui.get(.medium), d.v(cx, cy_fx - size * 0.62), i18n.tr("Senti saudade!", "Missed you!"), ctx.col(.elevated), ctx.col(.text), 1, ctx.win);
@@ -1871,13 +1875,37 @@ fn petLayered(ctx: *d.Ctx, dl: *c.ImDrawList, layer: *camada.Layer, cx: f32, cy:
     layer.end(dl, pl.alpha);
 }
 
-/// O corpo para o que fica na boca (a bola de chiclete): acompanha a altura da boca do
-/// Terminal.
+/// O corpo para o que fica na boca (a bola de chiclete): acompanha a boca do Terminal
+/// (a altura, o lado e o formato do corpo).
 fn atMouth(b: props.Body, kind: mascote.Kind) props.Body {
     if (kind != .terminal) return b;
     var o = b;
-    o.cy += terminal.look.mouthDy() * b.k();
+    const ms = terminal.look.mouthShift();
+    o.cx += ms[0] * b.k();
+    o.cy += ms[1] * b.k();
     return o;
+}
+
+/// Desde quando o mouse está parado em cima dele (0: não está).
+var name_hover_ms: i64 = 0;
+
+/// O nome dele (Personalizar → Nome) num balãozinho, com o mouse em cima por meio
+/// segundo.
+fn nameTip(ctx: *d.Ctx, on: bool, size: f32, now: i64) void {
+    const name = mascote.name();
+    if (!on or name.len == 0) {
+        name_hover_ms = 0;
+        return;
+    }
+    if (name_hover_ms == 0) name_hover_ms = now;
+    const wait_ms: i64 = 450;
+    if (now - name_hover_ms < wait_ms) {
+        anim.at(name_hover_ms + wait_ms);
+        return;
+    }
+    const r: d.Rect = .{ .x = s.x - size * 0.4, .y = s.y - size * 0.42, .w = size * 0.8, .h = size * 0.84 };
+    d.tip(ctx, r, name, true);
+    qa.mark(r, "pet-name:{s}", .{name});
 }
 
 /// A caneca subindo até a boca nos dois goles.
@@ -1911,8 +1939,8 @@ fn poke(now: i64) void {
 }
 
 /// Os enfeites de cada reação: corações, confete, "!", "Z", estrelinhas de tontura.
-/// `eye_dy`: a altura dos olhos do Terminal (a lupa fica na frente do olho).
-fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: bool, sleep_from: i64, rt: f32, eye_dy: f32) void {
+/// `eye`: o meio do olho direito do Terminal no desenho (a lupa fica na frente dele).
+fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: bool, sleep_from: i64, rt: f32, eye: [2]f32) void {
     const top = cy - size * 0.55;
     switch (s.react) {
         .love => for (0..4) |i| {
@@ -1982,12 +2010,12 @@ fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: boo
         },
         .search => {
             // A lupa na frente do olho direito.
-            const eye = terminal.petPoint(cx, cy, size, 84 + @sin(rt * 4) * 6, 62 + eye_dy);
+            const lens = terminal.petPoint(cx, cy, size, eye[0] + @sin(rt * 4) * 6, eye[1] + 7);
             const lr = size * 0.17;
             const a = std.math.clamp(rt / 0.2, 0, 1) * std.math.clamp((reactionSeconds(.search) - rt) / 0.2, 0, 1);
-            c.ImDrawList_AddCircleFilled(dl, eye, lr, Rgba.hex(0xBFEFFF).col(0.25 * a), 0);
-            c.ImDrawList_AddCircleEx(dl, eye, lr, Rgba.hex(0x22182E).col(a), 0, @max(size * 0.05, 1.5), 0);
-            c.ImDrawList_AddLineEx(dl, d.v(eye.x + lr * 0.7, eye.y + lr * 0.7), d.v(eye.x + lr * 1.6, eye.y + lr * 1.6), Rgba.hex(0x22182E).col(a), @max(size * 0.07, 2), 0);
+            c.ImDrawList_AddCircleFilled(dl, lens, lr, Rgba.hex(0xBFEFFF).col(0.25 * a), 0);
+            c.ImDrawList_AddCircleEx(dl, lens, lr, Rgba.hex(0x22182E).col(a), 0, @max(size * 0.05, 1.5), 0);
+            c.ImDrawList_AddLineEx(dl, d.v(lens.x + lr * 0.7, lens.y + lr * 0.7), d.v(lens.x + lr * 1.6, lens.y + lr * 1.6), Rgba.hex(0x22182E).col(a), @max(size * 0.07, 2), 0);
         },
         else => {},
     }

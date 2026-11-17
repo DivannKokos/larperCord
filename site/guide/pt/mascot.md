@@ -63,6 +63,8 @@ Configurações → Mascote → **Personalizar** veste o mascote Terminal. Uma p
 
 - **Visuais prontos**: 16 visuais completos, do Hacker ao Anjinho. **Sortear visual** escolhe um que combina, **Padrão** volta ao mascote de sempre e **Desfazer** desfaz a última troca.
 - **Altura dos olhos** e **Altura da boca**: dois controles embaixo dos botões sobem e descem os olhos e a boca no rosto. Levar um até o outro empurra o outro junto, então nunca ficam mais perto do que no desenho de sempre. **Padrão** volta os dois ao lugar.
+- **Nome**: dê um nome ao mascote (até 24 letras). Ele aparece ao parar o mouse em cima do mascote do canto e embaixo da prévia.
+- **Mais ajustes** abre mais controles: posição, espaço, desalinhado e tamanho dos olhos, posição e tamanho da boca, tamanho e ângulo das orelhas, corpo mais redondo ou quadrado e mais magrinho ou gordinho, e a força das bochechas. **Olhos de duas cores** dá ao olho direito uma cor só dele. Dá também para pegar os olhos ou a boca na prévia e arrastar.
 - **Olhos, Boca, Chapéu, Acessórios, Orelhas, Cores**: uma grade de imagens para cada. 15 olhos, 16 bocas, 22 chapéus, 12 acessórios (óculos e o que vai no pescoço, um de cada vez), 6 orelhas, 14 paletas, ou um hex seu para cada uma das cinco cores, ou a cor de destaque do tema.
 - O visual aparece onde o mascote aparece: nas aberturas, no Sobre, nas listas vazias e no mascote do canto. Com um chapéu escolhido, o mascote do canto não troca pelo das datas; **Chapéu nas datas**, em Mascote no canto, desliga esses. O mascote Clássico continua como é.
 

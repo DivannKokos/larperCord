@@ -66,6 +66,8 @@ fn closePage(app: *App) void {
 }
 fn clearLook(app: *App) void {
     app.st.settings.mascot_look.set("");
+    app.st.settings.mascot_tweaks.set("");
+    app.st.settings.mascot_name.set("");
     app.st.settings.mascot_file.set("");
 }
 fn clearFiles(app: *App) void {
@@ -73,7 +75,8 @@ fn clearFiles(app: *App) void {
     arquivos.qaClear();
 }
 fn defaultLook(app: *App) bool {
-    return app.st.settings.mascot_look.len == 0 and app.st.settings.mascot_file.len == 0 and look().isDefault();
+    const st = &app.st.settings;
+    return st.mascot_look.len == 0 and st.mascot_tweaks.len == 0 and st.mascot_name.len == 0 and st.mascot_file.len == 0 and look().isDefault();
 }
 fn previewShown(_: *App) bool {
     return qa.find("mascot-preview") != null and qa.find("mascot-tab:eyes") != null and qa.find("mascot-preset:hacker") != null;
@@ -148,7 +151,7 @@ fn isDefault(_: *App) bool {
 }
 fn compactSaved(app: *App) bool {
     // O que fica no settings.kdl, lido de volta, é o mesmo visual.
-    const back = visual.parseCompact(app.st.settings.mascot_look.slice());
+    const back = visual.parseLook(app.st.settings.mascot_look.slice(), app.st.settings.mascot_tweaks.slice());
     return back.eql(look());
 }
 
@@ -288,6 +291,12 @@ fn loginHide(app: *App) void {
     app.st.settings.mascot_opening = 0;
     app.login.phase = .hidden;
 }
+fn extremeTweaks(app: *App) void {
+    app.st.settings.mascot_tweaks.set(extreme_a);
+}
+fn clearTweaks(app: *App) void {
+    app.st.settings.mascot_tweaks.set("");
+}
 fn openSaved(app: *App) void {
     app.handle(.toggle_saved);
 }
@@ -345,6 +354,18 @@ fn noOverflow(_: *App) bool {
         return false;
     }
     return i18n.cuts.load(.monotonic) == 0;
+}
+/// Com "Mais ajustes" aberto (e o olho de duas cores, para a linha das cores aparecer)
+/// nada da página se sobrepõe.
+fn noOverlapMore(_: *App) bool {
+    return moreOpen(undefined) and @import("qa_paineis.zig").noOverlap(undefined);
+}
+fn twoColorLook(app: *App) void {
+    var buf: [256]u8 = undefined;
+    app.st.settings.mascot_look.set(visual.writeCompact(&visual.presets[3].look, &buf));
+    app.st.settings.mascot_tweaks.set("eye-size=2 right-eye=#29E6FF");
+    app.st.settings.mascot_name.set("Barba Ruiva de Bits");
+    app.st.settings.mascot_file.set("");
 }
 fn colorsTabOpen(_: *App) bool {
     return page.currentTab() == 5 and qa.find("mascot-hex:ink") != null;
@@ -409,6 +430,140 @@ fn mouthPushEyes(_: *App) bool {
 fn heightsBack(_: *App) bool {
     const top = visual.mouth_height_range[1];
     return look().mouth_height == top and look().eye_height == top;
+}
+
+
+// --- Mais ajustes, o nome e arrastar na prévia ----------------------------------------
+
+const mascote = @import("ui/mascote.zig");
+
+fn moreOpen(_: *App) bool {
+    return qa.find("mascot-tweak:eye-x") != null and qa.find("mascot-tweak:body-width") != null and qa.find("mascot-two-color") != null;
+}
+/// Quantas vezes algo foi guardado para desfazer até aqui (a pilha enche: o QA conta
+/// as vezes, não a altura dela).
+var pushes_before: usize = 0;
+fn noteDepth(_: *App) void {
+    pushes_before = page.undoPushes();
+}
+fn onePush() bool {
+    return page.undoPushes() == pushes_before + 1;
+}
+/// Arrasta o controle `id` até a ponta da direita e confere: o ajuste foi para o máximo
+/// (um desfazer só), a prévia mudou, e Padrão traz de volta os mesmos pixels.
+fn tweakCheck(comptime id: []const u8, comptime t: visual.Tweak) [8]Op {
+    const key = "mascot-tweak:" ++ id;
+    const F = struct {
+        fn atTop(_: *App) bool {
+            return look().tweak(t) == visual.tweak_range[@intFromEnum(t)][1] and onePush();
+        }
+    };
+    return .{
+        run(noteDepth),
+        .{ .drag = .{ .from = .{ .at = .{ .key = key, .fx = 0.5, .fy = 0.5 } }, .to = .{ .at = .{ .key = key, .fx = 0.995, .fy = 0.5 } } } },
+        expect(id ++ ": arrastar leva o ajuste até o máximo, com um desfazer só", F.atTop),
+        expect(id ++ ": a prévia muda", previewChanged),
+        expect(id ++ ": o settings.kdl guarda e volta igual", compactSaved),
+        click("button:Padrão"),
+        expect(id ++ ": Padrão volta ao de sempre", isDefault),
+        expect(id ++ ": e a prévia volta igual, pixel a pixel", previewSame),
+    };
+}
+fn blushTop(_: *App) bool {
+    return look().blushLevel() == visual.blush_range[1] and look().has(.blush) and onePush();
+}
+fn twoColorOn(_: *App) bool {
+    return look().right_eye != null and qa.find("mascot-eye-color:3") != null and qa.find("mascot-eye-hex") != null;
+}
+fn pinkEye(_: *App) bool {
+    const re = look().right_eye orelse return false;
+    return re.col(1) == visual.Rgba.hex(0xFF5FAE).col(1);
+}
+fn hexEye(_: *App) bool {
+    const re = look().right_eye orelse return false;
+    return re.col(1) == visual.Rgba.hex(0x12AB34).col(1);
+}
+fn named(app: *App) bool {
+    return std.mem.eql(u8, app.st.settings.mascot_name.slice(), "Bitinho") and std.mem.eql(u8, mascote.name(), "Bitinho") and
+        qa.find("mascot-name-tag:Bitinho") != null;
+}
+/// Padrão e os visuais prontos não tiram o nome.
+fn stillNamed(app: *App) bool {
+    return look().isDefault() and std.mem.eql(u8, app.st.settings.mascot_name.slice(), "Bitinho") and std.mem.eql(u8, mascote.name(), "Bitinho");
+}
+fn presetNamed(app: *App) bool {
+    return visual.presetOf(look()) != null and std.mem.eql(u8, mascote.name(), "Bitinho") and std.mem.eql(u8, app.st.settings.mascot_name.slice(), "Bitinho");
+}
+fn nameCut(app: *App) bool {
+    return std.mem.eql(u8, app.st.settings.mascot_name.slice(), "Bitinho Bitonho Bitunho") and std.mem.eql(u8, mascote.name(), "Bitinho Bitonho Bitunho");
+}
+fn unnamed(app: *App) bool {
+    return app.st.settings.mascot_name.len == 0 and mascote.name().len == 0 and qa.find("mascot-name-tag:Bitinho") == null;
+}
+var before_eyes: [2]i8 = .{ 0, 0 };
+fn noteGrab(_: *App) void {
+    before_eyes = .{ look().eye_x, look().eye_height };
+    pushes_before = page.undoPushes();
+}
+/// Arrastar um olho na prévia para a esquerda e para cima: os olhos andam juntos, um
+/// desfazer só.
+fn eyesDragged(_: *App) bool {
+    return look().eye_x < before_eyes[0] and look().eye_height > before_eyes[1] and onePush();
+}
+fn mouthDragged(_: *App) bool {
+    return look().mouth_x > 0 and look().mouth_height < 0 and onePush();
+}
+fn dragUndone(_: *App) bool {
+    return look().mouth_x == 0 and look().mouth_height == 0 and look().eye_x < 0;
+}
+fn tweaksSet(comptime parts: []const u8, comptime tweaks: []const u8) fn (*App) void {
+    return struct {
+        fn f(app: *App) void {
+            app.st.settings.mascot_look.set(parts);
+            app.st.settings.mascot_tweaks.set(tweaks);
+            app.st.settings.mascot_file.set("");
+        }
+    }.f;
+}
+const extreme_a_parts = "eyes=big mouth=grin hat=crown acc=glasses,blush,scarf pal=oceano";
+const extreme_a = "eye-height=10 eye-x=-6 eye-spacing=6 eye-tilt=-6 eye-size=5 mouth-x=10 mouth-size=4 ear-size=4 ear-tilt=4 roundness=4 body-width=4 blush=6 right-eye=#FFC23D";
+const extreme_b_parts = "eyes=cat mouth=fang hat=tophat ears=bunny acc=shades,mustache,bowtie pal=lava";
+const extreme_b = "eye-height=-4 mouth-height=-4 eye-x=6 eye-spacing=-4 eye-tilt=6 eye-size=-4 mouth-x=-10 mouth-size=-3 ear-size=-4 ear-tilt=-4 roundness=-5 body-width=-4";
+fn extremeA(_: *App) bool {
+    return look().eye_size == 5 and look().roundness == 4 and look().right_eye != null;
+}
+fn extremeB(_: *App) bool {
+    return look().eye_size == -4 and look().roundness == -5 and look().ears == .bunny;
+}
+fn petNamed(app: *App) void {
+    app.st.settings.mascot_look.set(extreme_a_parts);
+    app.st.settings.mascot_tweaks.set(extreme_a);
+    app.st.settings.mascot_name.set("Bitinho");
+    app.st.settings.mascot_file.set("");
+    app.st.settings.mascot_life = 0;
+    app.st.settings.mascot_pet = true;
+    app.st.settings.my_status = 0;
+    pet.qaUnhide();
+    pet.qaHome();
+    pet.qaIdleFor(0, app.images.now_ms);
+}
+fn petNamedReady(_: *App) bool {
+    return qa.find("pet") != null and std.mem.eql(u8, mascote.name(), "Bitinho") and look().eye_size == 5;
+}
+fn nameTipShown(_: *App) bool {
+    return qa.find("pet-name:Bitinho") != null;
+}
+fn nameTipGone(_: *App) bool {
+    return qa.find("pet-name:Bitinho") == null;
+}
+fn mouseAway(app: *App) void {
+    c.ImGuiIO_AddMousePosEvent(app.io, 12, 12);
+}
+fn classicPet(app: *App) void {
+    app.st.settings.mascot = 1;
+}
+fn terminalPet(app: *App) void {
+    app.st.settings.mascot = 0;
 }
 
 // --- Invisível: um fantasma só ------------------------------------------------------------
@@ -579,6 +734,95 @@ pub const ops = [_]Op{
     expect("e a prévia volta igual, pixel a pixel", previewSame),
     click("button:Desfazer"),
     expect("desfazer traz as alturas de volta", heightsBack),
+
+    s("mais ajustes: cada controle muda a prévia, e Padrão volta igual"),
+    run(clearLook),
+    run(scrollTo(.stage)),
+    wait(400),
+    click("mascot-more"),
+    wait(150),
+    expect("Mais ajustes abre com os controles", moreOpen),
+    run(notePreview),
+} ++ tweakCheck("eye-x", .eye_x) ++ tweakCheck("eye-spacing", .eye_spacing) ++ tweakCheck("eye-tilt", .eye_tilt) ++
+    tweakCheck("eye-size", .eye_size) ++ tweakCheck("mouth-x", .mouth_x) ++ tweakCheck("mouth-size", .mouth_size) ++
+    tweakCheck("ear-size", .ear_size) ++ tweakCheck("ear-tilt", .ear_tilt) ++ tweakCheck("roundness", .roundness) ++
+    tweakCheck("body-width", .body_width) ++ [_]Op{
+    run(noteDepth),
+    .{ .drag = .{ .from = .{ .at = .{ .key = "mascot-tweak:blush", .fx = 0.5, .fy = 0.5 } }, .to = .{ .at = .{ .key = "mascot-tweak:blush", .fx = 0.995, .fy = 0.5 } } } },
+    expect("bochechas: arrastar liga o acessório na força máxima", blushTop),
+    expect("bochechas: a prévia muda", previewChanged),
+    expect("bochechas: o settings.kdl guarda e volta igual", compactSaved),
+    click("button:Padrão"),
+    expect("bochechas: Padrão tira", isDefault),
+    expect("bochechas: e a prévia volta igual, pixel a pixel", previewSame),
+
+    s("olhos de duas cores"),
+    click("mascot-two-color"),
+    wait(150),
+    expect("ligar dá outra cor ao olho direito e mostra as cores", twoColorOn),
+    expect("o olho direito de outra cor muda a prévia", previewChanged),
+    click("mascot-eye-color:3"),
+    expect("escolher uma cor pronta", pinkEye),
+    click("mascot-eye-hex"),
+    .{ .key = .{ .key = c.ImGuiKey_A, .ctrl = true } },
+    .{ .text = "#12AB34" },
+    .{ .key = .{ .key = c.ImGuiKey_Enter } },
+    expect("ou uma em hex", hexEye),
+    expect("o settings.kdl guarda a cor do olho", compactSaved),
+} ++ snap(.stage, "mvis-38-mais-ajustes") ++ snap(.more, "mvis-38b-mais-ajustes-cores") ++ [_]Op{
+    // De volta à prévia (a comparação dos pixels é no lugar de antes).
+    run(scrollTo(.stage)),
+    wait(250),
+    click("button:Padrão"),
+    expect("Padrão volta aos olhos da mesma cor", isDefault),
+    expect("e a prévia volta igual, pixel a pixel", previewSame),
+
+    s("o nome"),
+    click("mascot-name"),
+    .{ .key = .{ .key = c.ImGuiKey_A, .ctrl = true } },
+    .{ .text = "Bitinho" },
+    .{ .key = .{ .key = c.ImGuiKey_Enter } },
+    wait(150),
+    expect("o nome fica salvo, o getter devolve e a prévia mostra", named),
+} ++ snap(.stage, "mvis-39-nome") ++ [_]Op{
+    click("mascot-preset:pirata"),
+    expect("um visual pronto não tira o nome", presetNamed),
+    click("button:Padrão"),
+    expect("Padrão também não", stillNamed),
+    click("button:Desfazer"),
+    click("button:Desfazer"),
+    click("button:Desfazer"),
+    expect("desfazer tira o nome de novo", unnamed),
+    click("mascot-name"),
+    .{ .key = .{ .key = c.ImGuiKey_A, .ctrl = true } },
+    .{ .text = "Bitinho Bitonho Bitunho Bit" },
+    .{ .key = .{ .key = c.ImGuiKey_Enter } },
+    expect("o nome para em 24 letras (e sem o espaço do fim)", nameCut),
+    click("button:Desfazer"),
+    expect("e desfazer tira", unnamed),
+
+    s("arrastar olhos e boca na prévia"),
+    run(clearLook),
+    wait(200),
+    run(noteGrab),
+    .{ .drag = .{ .from = .{ .at = .{ .key = "mascot-drag:eyes", .fx = 0.5, .fy = 0.5 } }, .to = .{ .at = .{ .key = "mascot-preview", .fx = 0.36, .fy = 0.3 } } } },
+    expect("arrastar um olho leva os dois para a esquerda e para cima, com um desfazer", eyesDragged),
+    expect("o settings.kdl guarda onde ficaram", compactSaved),
+    run(noteDepth),
+    .{ .drag = .{ .from = .{ .at = .{ .key = "mascot-drag:mouth", .fx = 0.5, .fy = 0.5 } }, .to = .{ .at = .{ .key = "mascot-preview", .fx = 0.62, .fy = 0.8 } } } },
+    expect("arrastar a boca leva para a direita e para baixo, com um desfazer", mouthDragged),
+} ++ snap(.stage, "mvis-40-arrastado") ++ [_]Op{
+    click("button:Desfazer"),
+    expect("desfazer desfaz o arraste da boca inteiro", dragUndone),
+
+    s("visuais nos extremos"),
+    run(tweaksSet(extreme_a_parts, extreme_a)),
+    expect("extremo redondo e gordinho", extremeA),
+} ++ snap(.stage, "mvis-41-extremo-redondo") ++ [_]Op{
+    run(tweaksSet(extreme_b_parts, extreme_b)),
+    expect("extremo quadrado e magrinho", extremeB),
+} ++ snap(.stage, "mvis-42-extremo-quadrado") ++ [_]Op{
+    run(clearLook),
     run(motionBack),
 
     s("sortear, prontos, padrão e desfazer"),
@@ -662,16 +906,19 @@ pub const ops = [_]Op{
     run(themeNamed("classico")),
     .{ .expect = .{ .name = "de volta ao clássico", .check = themeIs("classico"), .timeout_ms = 4000 } },
     .{ .resize = .{ 820, 700 } },
+    run(twoColorLook),
     wait(300),
 } ++ snap(.stage, "mvis-24-estreita") ++ snap(.tabs, "mvis-25-estreita-grade") ++ [_]Op{
     run(langRu),
     wait(400),
     expect("russo, janela estreita: nada passa da área nem corta", noOverflow),
+    expect("russo, janela estreita, com Mais ajustes aberto: nada se sobrepõe", noOverlapMore),
 } ++ snap(.stage, "mvis-26-russo") ++ [_]Op{
     .{ .resize = .{ 1280, 800 } },
     run(langJa),
     wait(400),
     expect("japonês: nada passa da área nem corta", noOverflow),
+    expect("japonês, com Mais ajustes aberto: nada se sobrepõe", noOverlapMore),
 } ++ snap(.stage, "mvis-27-japones") ++ snap(.files, "mvis-28-japones-arquivos") ++ [_]Op{
     run(langPt),
     run(closePage),
@@ -700,7 +947,21 @@ pub const ops = [_]Op{
     shot("mvis-33-abertura-portal"),
     run(loginWith(0, 1, 1.9)),
     shot("mvis-34-abertura-codigo"),
+    // Com os ajustes nos extremos: a abertura de sempre, a de pixels e o momento.
+    run(loginWith(1, 0, 3.2)),
+    run(extremeTweaks),
+    wait(200),
+    shot("mvis-44-abertura-extremo"),
+    run(loginWith(1, 3, 0.95)),
+    wait(100),
+    shot("mvis-45-abertura-pixels-extremo"),
     run(loginHide),
+    run(openSaved),
+    expect("salvas vazias com os ajustes nos extremos", savedSleeps),
+    wait(600),
+    shot("mvis-46-momento-extremo"),
+    run(openSaved),
+    run(clearTweaks),
 
     s("invisível: o mascote do canto some por igual"),
     run(ghostSetup),
@@ -717,6 +978,23 @@ pub const ops = [_]Op{
     run(sampleBehind),
     expect("invisível: um fantasma só, sem a orelha aparecendo através do corpo", ghostUniform),
     run(ghostDone),
+
+    s("o nome no mascote do canto"),
+    run(petNamed),
+    .{ .expect = .{ .name = "o mascote do canto com o nome e o visual nos extremos", .check = petNamedReady, .timeout_ms = 3000 } },
+    .{ .hover = .{ .mark = "pet" } },
+    .{ .expect = .{ .name = "parar o mouse em cima mostra o nome dele", .check = nameTipShown, .timeout_ms = 2500 } },
+    wait(300),
+    shot("mvis-43-canto-nome"),
+    run(mouseAway),
+    .{ .expect = .{ .name = "tirar o mouse esconde o nome", .check = nameTipGone, .timeout_ms = 2500 } },
+    run(classicPet),
+    wait(300),
+    .{ .hover = .{ .mark = "pet" } },
+    wait(900),
+    expect("o Clássico não tem o nome do Terminal", nameTipGone),
+    run(terminalPet),
+    run(mouseAway),
     run(clearLook),
     expect("limpo: o de sempre de novo", defaultLook),
 };
@@ -773,7 +1051,8 @@ pub const ops_folha = [_]Op{
     run(openPage),
     wait(300),
 } ++ sheetOp(.eyes0) ++ sheetOp(.eyes1) ++ sheetOp(.eyes2) ++ sheetOp(.mouth0) ++ sheetOp(.mouth1) ++ sheetOp(.mouth2) ++
-    sheetOp(.hats0) ++ sheetOp(.hats1) ++ sheetOp(.acc) ++ sheetOp(.ears) ++ sheetOp(.small) ++ sheetOp(.palettes) ++ sheetOp(.combos) ++ sheetOp(.detail) ++ [_]Op{
+    sheetOp(.hats0) ++ sheetOp(.hats1) ++ sheetOp(.acc) ++ sheetOp(.ears) ++ sheetOp(.small) ++ sheetOp(.palettes) ++ sheetOp(.combos) ++ sheetOp(.detail) ++
+    sheetOp(.tweaks_eyes) ++ sheetOp(.tweaks_mouths) ++ sheetOp(.tweaks_hats) ++ sheetOp(.tweaks_acc) ++ [_]Op{
     run(sheetFn(.none)),
     run(copyCommunity),
     expect("os exemplos de mascots/community abrem sem erro", communityOk),

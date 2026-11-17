@@ -118,6 +118,13 @@ pub const Settings = struct {
     /// O visual do Terminal (Configurações → Mascote → Personalizar) em uma linha
     /// (ui/mascote_visual.zig `writeCompact`: só o que não é o padrão); vazio = o de sempre.
     mascot_look: Text = .{},
+    /// As posições, os tamanhos e o formato do Terminal (Personalizar: as alturas e os
+    /// Mais ajustes) em uma linha (ui/mascote_visual.zig `writeTweaks`); vazio = os de
+    /// sempre. À parte de `mascot_look` para os dois caberem.
+    mascot_tweaks: Text = .{},
+    /// O nome dele (Personalizar → Nome), que aparece com o mouse em cima do mascote do
+    /// canto; vazio = sem nome.
+    mascot_name: Text = .{},
     /// O arquivo de mascote escolhido (<config>/larpercord/mascots/<nome>.kdl, sem o
     /// ".kdl"); vazio = o visual de `mascot_look`.
     mascot_file: Text = .{},
