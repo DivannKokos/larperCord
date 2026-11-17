@@ -833,6 +833,9 @@ const updater_qa = @import("net/updater.zig");
 fn updateAvailable(_: *App) void {
     updater_qa.qaSet(.available, "v9.9.9");
 }
+fn updateIdle(_: *App) void {
+    updater_qa.qaSet(.idle, "");
+}
 fn updateShownAvailable(_: *App) bool {
     return qa.find("update-status:available") != null;
 }
@@ -2127,6 +2130,8 @@ const ops = [_]Op{
     expect("instalar pede para reiniciar", updateShownReady),
     click("button:Reiniciar o larperCord"),
     expect("reiniciar (no QA só avisa)", toastRestart),
+    // Nada esperando de novo: a faixa de versão nova não fica por cima do resto do QA.
+    .{ .run = updateIdle },
     click("settings:Novidades"),
     expect("a página de novidades mostra o changelog", changelogShown),
     .{ .wait = 100 },
