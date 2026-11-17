@@ -234,6 +234,7 @@ pub const Gateway = struct {
     rng: std.Random.DefaultPrng,
     hot_channel: Id = 0,
     last_live: Id = 0,
+    last_live_channel: Id = 0,
     next_live_ms: i64 = 0,
     pending_typing: ?struct { channel: Id, user: Id, at_ms: i64 } = null,
     next_latency_ms: i64 = 0,
@@ -944,6 +945,11 @@ pub const Gateway = struct {
                     if (ch == g.ringing_me) g.ringing_me = 0;
                     g.emit(.{ .call = .{ .channel = ch } });
                 },
+                .demo_message => |dm| {
+                    const r = g.rng.random();
+                    const user = dmRecipient(dm.channel) orelse (if (dm.channel == group_id) g.groupCaller() else null) orelse users[1 + r.uintLessThan(usize, 7)].id;
+                    _ = try g.liveMessage(dm.channel, user, 0, dm.mention);
+                },
                 .demo_call => |dc| {
                     const caller = dmRecipient(dc.channel) orelse (if (dc.channel == group_id) g.groupCaller() else null) orelse continue;
                     if (dc.ring) {
@@ -1607,6 +1613,28 @@ pub const Gateway = struct {
         g.emit(.{ .call = .{ .channel = ch, .ended = true } });
     }
 
+    /// Uma mensagem ao vivo de `user` em `channel`, com uma das frases da
+    /// demonstração. `mention`: marca a gente, como o Discord manda.
+    fn liveMessage(g: *Gateway, channel: Id, user: Id, reply_to: Id, mention: bool) !Id {
+        const now = nowMs();
+        const r = g.rng.random();
+        const id = types.makeSnowflake(now, r.int(u22));
+        const text = phrase(r.uintLessThan(usize, phrases.len));
+        const content = if (mention) try std.fmt.allocPrint(alloc, "<@{d}> {s}", .{ me_id, text }) else try alloc.dupe(u8, text);
+        g.emit(.{ .message_create = .{
+            .id = id,
+            .channel = channel,
+            .author = user,
+            .timestamp = @divTrunc(now, 1000),
+            .content = content,
+            .reply_to = reply_to,
+            .mentions_me = mention,
+        } });
+        g.last_live = id;
+        g.last_live_channel = channel;
+        return id;
+    }
+
     fn nextDeadline(g: *Gateway) i64 {
         var d = @min(@min(g.next_live_ms, g.next_latency_ms), g.next_flood_ms);
         if (g.call_answer) |a| d = @min(d, a.at_ms);
@@ -1865,24 +1893,21 @@ pub const Gateway = struct {
         if (g.pending_typing) |t| {
             if (now >= t.at_ms) {
                 const r = g.rng.random();
-                const id = types.makeSnowflake(now, r.int(u22));
-                g.emit(.{ .message_create = .{
-                    .id = id,
-                    .channel = t.channel,
-                    .author = t.user,
-                    .timestamp = @divTrunc(now, 1000),
-                    .content = try alloc.dupe(u8, phrase(r.uintLessThan(usize, phrases.len))),
-                    .reply_to = if (r.uintLessThan(u8, 3) == 0) g.last_live else 0,
-                } });
-                g.last_live = id;
+                // A resposta é a outra ao vivo da mesma conversa.
+                const reply_to = if (r.uintLessThan(u8, 3) == 0 and g.last_live_channel == t.channel) g.last_live else 0;
+                _ = try g.liveMessage(t.channel, t.user, reply_to, false);
                 g.pending_typing = null;
                 g.next_live_ms = now + r.intRangeLessThan(i64, 7000, 16000);
             }
         } else if (now >= g.next_live_ms and g.hot_channel != 0) {
             const r = g.rng.random();
-            const user = if (dmRecipient(g.hot_channel)) |u| u else users[1 + r.uintLessThan(usize, 7)].id;
-            g.emit(.{ .typing_start = .{ .channel = g.hot_channel, .user = user } });
-            g.pending_typing = .{ .channel = g.hot_channel, .user = user, .at_ms = now + r.intRangeLessThan(i64, 2200, 4000) };
+            // De vez em quando, um amigo manda DM em outra conversa: a demonstração
+            // também mostra o aviso de DM (o som de mensagem nova, o contador, a
+            // cartinha do mascote).
+            const ch = if (dmRecipient(g.hot_channel) == null and r.uintLessThan(u8, 4) == 0) dmId(r.uintLessThan(usize, 6)) else g.hot_channel;
+            const user = if (dmRecipient(ch)) |u| u else users[1 + r.uintLessThan(usize, 7)].id;
+            g.emit(.{ .typing_start = .{ .channel = ch, .user = user } });
+            g.pending_typing = .{ .channel = ch, .user = user, .at_ms = now + r.intRangeLessThan(i64, 2200, 4000) };
             if (r.uintLessThan(u8, 4) == 0) {
                 const who = users[1 + r.uintLessThan(usize, users.len - 1)].id;
                 const st: types.Status = @enumFromInt(r.uintLessThan(u8, 3));

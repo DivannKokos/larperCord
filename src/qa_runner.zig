@@ -2627,7 +2627,7 @@ const ops = [_]Op{
     expect("Apagar cache apaga os arquivos", cacheEmpty),
     key(c.ImGuiKey_Escape),
 
-} ++ ops_plugin_section ++ @import("qa_alertas.zig").ops ++ @import("qa_leitura.zig").ops ++ @import("qa_threads.zig").ops ++ @import("qa_voz.zig").ops ++ @import("qa_chamada.zig").ops ++ @import("qa_bandeja.zig").ops ++ lsp_ops ++ @import("qa_paineis.zig").all ++ @import("qa_quadros.zig").ops ++ [_]Op{
+} ++ ops_plugin_section ++ @import("qa_alertas.zig").ops ++ @import("qa_leitura.zig").ops ++ @import("qa_threads.zig").ops ++ @import("qa_voz.zig").ops ++ @import("qa_chamada.zig").ops ++ @import("qa_som_mensagem.zig").ops ++ @import("qa_bandeja.zig").ops ++ lsp_ops ++ @import("qa_paineis.zig").all ++ @import("qa_quadros.zig").ops ++ [_]Op{
     s("caixa de entrada"),
     click("guild:500000"),
     click("channel:500005"),
@@ -2875,6 +2875,7 @@ const ops_leitura = [_]Op{
 } ++ @import("qa_leitura.zig").startup ++ @import("qa_leitura.zig").ops;
 const ops_voz = [_]Op{ expect("pronto", ready), click("guild:500000") } ++ @import("qa_voz.zig").ops;
 const ops_chamada = [_]Op{expect("pronto", ready)} ++ @import("qa_chamada.zig").ops;
+const ops_som_mensagem = [_]Op{expect("pronto", ready)} ++ @import("qa_som_mensagem.zig").ops;
 const ops_lsp = [_]Op{expect("pronto", ready)} ++ lsp_ops;
 const ops_lsp_quit = [_]Op{expect("pronto", ready)} ++ lsp_ops_quit;
 const qa_bandeja = @import("qa_bandeja.zig");
@@ -3320,6 +3321,7 @@ const suites = [_]struct { []const u8, []const Op }{
     .{ "atalhos", &@import("qa_atalhos.zig").ops },
     .{ "abas-conjuntos", &@import("qa_conjuntos.zig").ops },
     .{ "chamada", &ops_chamada },
+    .{ "som-mensagem", &ops_som_mensagem },
     .{ "lsp", &ops_lsp },
     .{ "lsp-quit", &ops_lsp_quit },
     .{ "bandeja", &ops_bandeja },

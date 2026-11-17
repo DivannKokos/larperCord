@@ -37,6 +37,9 @@
 - A new version no longer hides in a toast that lasted under two seconds: a bar at the top says which version came out and stays until you close it, with "Update now", the download progress and "Restart now" when it's installed; closing it lasts until the app opens again. The settings button keeps a dot while there's something to update, and with the app in the tray or unfocused, a desktop notification says so too. Installed by a package manager, the button explains how to update through it.
 - Settings → Updates → "Update automatically", off by default: when a new version is found, it downloads and installs in the background (signature checked as always) and opens the next time the app starts.
 
+**Notifications**
+- A new message sound, like Discord's: a short cue for direct messages, groups and mentions (@everyone, @here and your roles included, following the server's notification settings), on by default in Settings → Notifications → New message sound. It plays with the window unfocused or hidden in the tray, and in another conversation; not for the conversation you're looking at, your own messages, muted channels and servers, or in Do Not Disturb. A burst of messages plays it once every 1.5 seconds. The sound can be turned off, swapped for another built-in one or for a file of yours, with its own volume, right there or in Settings → Voice → Sounds, and it goes out on the same output as the call sounds. The demo gets a DM from a friend now and then. The new texts are in English in Russian until someone translates them.
+
 ## 0.6.6
 
 **Appearance**

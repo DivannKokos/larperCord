@@ -4598,7 +4598,7 @@ pub const Gateway = struct {
                 var resp = g.request("POST", path, body) orelse return;
                 resp.body.deinit(alloc);
             },
-            .demo_call => {},
+            .demo_call, .demo_message => {},
             .shutdown => {},
         }
     }

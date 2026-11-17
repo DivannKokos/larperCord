@@ -37,6 +37,9 @@
 - Versão nova não fica mais escondida num toast de menos de dois segundos: uma faixa no topo diz qual versão saiu e fica até você fechar, com "Atualizar agora", o progresso do download e "Reiniciar agora" quando ela está instalada; fechar vale até o app abrir de novo. O botão das configurações fica com um pontinho enquanto houver o que atualizar, e com o app na bandeja ou sem foco vai também uma notificação do sistema. Instalado por gerenciador de pacotes, o botão explica como atualizar por ele.
 - Configurações → Atualizações → "Atualizar sozinho", desligado de começo: achou versão nova, baixa e instala em segundo plano (com a assinatura conferida como sempre) e ela abre na próxima vez que o app abrir.
 
+**Notificações**
+- Som de mensagem nova, como no Discord: um aviso curto com mensagem direta, grupo e menção (@everyone, @here e os seus cargos também, seguindo as notificações do servidor), ligado de começo em Configurações → Notificações → Som de mensagem nova. Toca com a janela fora de foco ou escondida na bandeja, e em outra conversa; não na conversa que você está olhando, nas suas próprias mensagens, em canais e servidores silenciados, nem em Não perturbe. Uma rajada de mensagens toca uma vez a cada 1,5 segundo. O som pode ser desligado, trocado por outro embutido ou por um arquivo seu, com volume próprio, ali mesmo ou em Configurações → Voz → Sons, e sai na mesma saída dos sons da call. A demonstração recebe uma DM de um amigo de vez em quando. Os textos novos ficam em inglês no russo até alguém traduzir.
+
 ## 0.6.6
 
 **Aparência**

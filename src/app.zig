@@ -60,6 +60,8 @@ const app_accounts = @import("app_accounts.zig");
 const app_chamada = @import("app_chamada.zig");
 const app_presenca = @import("app_presenca.zig");
 const voz_audio = @import("net/voz_audio.zig");
+const aviso = @import("core/aviso.zig");
+const sons = @import("core/sons.zig");
 const lsp_net = @import("net/lsp.zig");
 const updater = @import("net/updater.zig");
 const aviso_versao = @import("core/aviso_versao.zig");
@@ -243,6 +245,8 @@ pub const App = struct {
     viewing: types.Id = 0,
     /// QA: faz de conta que a janela perdeu o foco.
     qa_blur: bool = false,
+    /// O som de mensagem nova: o intervalo de uma rajada e quantos pediu (core/aviso.zig).
+    msg_sound: aviso.Som = .{},
     /// O QA quer o portão dos quadros valendo (não vai ler os pixels nesse trecho).
     qa_real_gate: bool = false,
     /// A lista de membros do canal aberto (op 14): sai na hora depois de uma
@@ -2571,13 +2575,16 @@ pub const App = struct {
         // Menção pela regra do Discord (core/mencao.zig): a mesma do destaque.
         const verdict = f.judge(m.author, m.content, cs.info.guild == 0, app.store.mentionsMe(cs.info.guild, &m));
         if (verdict == .important) f.bump(app.gpa, &app.store, m.channel);
-        // Silêncio e nível de notificação vêm da conta (app_conta.zig).
-        if (verdict != .hidden and @import("app_conta.zig").allowsNotify(app, m, cs, verdict == .important)) {
+        // Silêncio e nível de notificação vêm da conta (app_conta.zig); a regra,
+        // a mesma da notificação e do som, de core/aviso.zig.
+        const alert = aviso.notifies(@import("app_conta.zig").arrival(app, m, cs, verdict));
+        if (alert) {
             f.notified +%= 1;
             @import("ui/mascote_pet.zig").onPing(now());
             if (cs.info.guild == 0 and app.st.activeChannel() != m.channel) @import("ui/mascote_pet.zig").onDm();
             app.notify(m, cs);
         }
+        app.messageSound(m.channel, alert);
         if (verdict != .important and f.focusOn(now()) and !cs.info.unread and app.st.activeChannel() != m.channel) return m.channel;
         return null;
     }
@@ -2589,8 +2596,8 @@ pub const App = struct {
         const set = &app.st.settings;
         const flags = c.SDL_GetWindowFlags(app.win.window);
         const hidden = flags & c.SDL_WINDOW_HIDDEN != 0;
-        const focused = !hidden and flags & c.SDL_WINDOW_INPUT_FOCUS != 0;
-        if (focused and app.st.activeChannel() == m.channel) return;
+        const focused = app.windowFocused();
+        if (aviso.seen(focused, app.st.activeChannel() == m.channel)) return;
         if (set.taskbar_flash and !focused and !hidden) _ = c.SDL_FlashWindow(app.win.window, c.SDL_FLASH_UNTIL_FOCUSED);
         if (!set.desktop_notifs or focused or app.notifiers.items.len >= 8) return;
 
@@ -2631,6 +2638,35 @@ pub const App = struct {
         else
             i18n.fmtZ(&bb, "Versão {s} disponível. Abra o app para atualizar.", "Version {s} is available. Open the app to update.", .{v}));
         if (body.len > 0) app.desktopNotify("larperCord", body);
+    }
+
+    /// A janela está à frente, com o foco? Escondida na bandeja não conta. O QA
+    /// e os prints rodam fora da tela, sem foco de verdade: lá vale `qa_blur`.
+    fn windowFocused(app: *App) bool {
+        const flags = c.SDL_GetWindowFlags(app.win.window);
+        if (flags & c.SDL_WINDOW_HIDDEN != 0) return false;
+        if (app.opts.qa or app.opts.shot != null) return !app.qa_blur;
+        return flags & c.SDL_WINDOW_INPUT_FOCUS != 0;
+    }
+
+    /// O som de mensagem nova, com a mesma regra da notificação (`alert`), fora
+    /// da conversa que a pessoa está olhando e do "Não perturbe", no máximo um
+    /// a cada `aviso.Som.gap_ms`. Toca pela saída e no volume dos sons da call
+    /// (net/voz_audio.zig). Vale com a janela fora de foco e na bandeja: a fila
+    /// de eventos anda sem quadro nenhum. Na demonstração e no QA também (o QA
+    /// conta pelo `msg_sound.played`, no driver mudo).
+    fn messageSound(app: *App, ch: types.Id, alert: bool) void {
+        const set = &app.st.settings;
+        const on = set.message_sound and settings_state.soundVariantC(set, .message) != @backingInt(sons.Variant.off);
+        if (!app.msg_sound.want(.{
+            .on = on,
+            .alert = alert,
+            .dnd = @import("app_conta.zig").dndNow(app),
+            .focused = app.windowFocused(),
+            .active = app.st.activeChannel() == ch,
+            .now_ms = @intCast(c.SDL_GetTicks()),
+        })) return;
+        voz_audio.play(.message);
     }
 
     /// Uma notificação do sistema: notify-send no Linux, o aviso da bandeja no Windows.

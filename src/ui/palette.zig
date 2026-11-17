@@ -160,6 +160,7 @@ const toggle_names = [_]struct { field: []const u8, pt: []const u8, en: []const 
     .{ .field = "streamer_mode", .pt = "Modo streamer", .en = "Streamer Mode" },
     .{ .field = "desktop_notifs", .pt = "Notificações na área de trabalho", .en = "Desktop notifications" },
     .{ .field = "taskbar_flash", .pt = "Piscar na barra de tarefas", .en = "Flash taskbar" },
+    .{ .field = "message_sound", .pt = "Som de mensagem nova", .en = "New message sound" },
     .{ .field = "vim_keys", .pt = "Navegação estilo vim", .en = "Vim-style navigation" },
     .{ .field = "developer_mode", .pt = "Modo desenvolvedor", .en = "Developer Mode" },
     .{ .field = "hot_reload", .pt = "Recarregar temas ao salvar", .en = "Reload themes on save" },

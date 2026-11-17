@@ -92,6 +92,7 @@ fn eventLabel(e: sons.Event) []const u8 {
         .deafen => i18n.tr("Ensurdecer", "Deafen"),
         .undeafen => i18n.tr("Desensurdecer", "Undeafen"),
         .ring => i18n.tr("Chamada recebida (toque)", "Incoming call (ringtone)"),
+        .message => i18n.tr("Mensagem nova (DM ou menção)", "New message (DM or mention)"),
     };
 }
 
@@ -109,12 +110,16 @@ fn variantLabel(v: sons.Variant) []const u8 {
 fn soundList(p: anytype, s: *S.Settings) void {
     p.note(i18n.tr("Cada som pode ser desligado, trocado por outro embutido ou por um arquivo seu: WAV (PCM) ou Ogg Opus, até 2 MB e 5 s (o toque, até 15 s). O arquivo é copiado para a pasta do larperCord.", "Each sound can be turned off, swapped for another built-in one or for a file of yours: WAV (PCM) or Ogg Opus, up to 2 MB and 5 s (the ringtone, up to 15 s). The file is copied into larperCord's folder."));
     p.y += 6;
-    for (std.enums.values(sons.Event)) |e| soundRow(p, s, e);
+    for (std.enums.values(sons.Event)) |e| if (e != .message) soundRow(p, s, e);
+    // Não é da call: a chave dele fica em Notificações (que também mostra esta linha).
+    p.note(i18n.tr("O som de mensagem nova liga e desliga em Notificações, à parte dos sons da call.", "The new message sound is turned on and off in Notifications, apart from the call sounds."));
+    p.y += 6;
+    soundRow(p, s, .message);
 }
 
 /// Uma linha por evento: o nome (e o arquivo, se é um), a escolha, o Ouvir e,
-/// embaixo, o volume.
-fn soundRow(p: anytype, s: *S.Settings, e: sons.Event) void {
+/// embaixo, o volume. Também em Notificações, para a mensagem nova.
+pub fn soundRow(p: anytype, s: *S.Settings, e: sons.Event) void {
     const ctx = p.ctx;
     const i = @backingInt(e);
     const key = @tagName(e);
