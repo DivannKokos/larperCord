@@ -49,6 +49,7 @@ const member_ask = @import("member_ask.zig");
 const envio_json = @import("envio_json.zig");
 const envio = @import("../core/envio.zig");
 const gw_budget = @import("gw_budget.zig");
+const registro = @import("registro_rede.zig");
 const limits_json = @import("limits_json.zig");
 const debug_log = @import("../platform/debug_log.zig");
 const conta_net = @import("conta_net.zig");
@@ -505,7 +506,7 @@ pub const Gateway = struct {
         }
 
         const h = c.curl_easy_init() orelse return .retry;
-        sys.curlTls(h);
+        sys.curlTlsWebSocket(h);
         g.ws = h;
         var url_buf: [512]u8 = undefined;
         const base = if (g.resume_len > 0) g.resume_base[0..@as(usize, g.resume_len)] else gateway_host;
@@ -802,6 +803,10 @@ pub const Gateway = struct {
         if (off < payload.len) {
             if (g.ws_end == null) g.ws_end = .reconnect;
             return false;
+        }
+        if (debug_log.isOn()) {
+            var lb: [64]u8 = undefined;
+            if (registro.opLine(&lb, payload)) |line| std.log.info("gateway: saiu {s}", .{line});
         }
         return true;
     }
@@ -3321,7 +3326,8 @@ pub const Gateway = struct {
             _ = c.curl_easy_setopt(h, c.CURLOPT_TIMEOUT, @as(c_long, if (mime != null) 180 else 20));
             // Com prazo, a conexão também: sem isso uma rede travada mandaria o pedido depois dele.
             if (deadline != 0) _ = c.curl_easy_setopt(h, c.CURLOPT_CONNECTTIMEOUT_MS, @as(c_long, @intCast(std.math.clamp(deadline - nowMs(), 1, 60_000))));
-            _ = c.curl_easy_setopt(h, c.CURLOPT_ACCEPT_ENCODING, "");
+            // Na ordem do Chrome (o curl, sozinho, põe "deflate, gzip, br, zstd").
+            _ = c.curl_easy_setopt(h, c.CURLOPT_ACCEPT_ENCODING, sys.acceptEncoding());
             g.abortable(h);
             if (mime) |mp| {
                 _ = c.curl_easy_setopt(h, c.CURLOPT_MIMEPOST, mp);
@@ -3350,6 +3356,7 @@ pub const Gateway = struct {
             applyRate(g, rate);
             // Captcha, verificação ou 401: conta e vai para o registro de depuração.
             challenge.observe(resp.status, method, path, resp.body.items);
+            if (debug_log.isOn()) std.log.info("api: {s} {s} -> {d}", .{ method, registro.pathOnly(path), resp.status });
             if (resp.status == 429) {
                 // Rate limit: espera o que o Discord pediu e tenta de novo.
                 var wait_ms: u32 = rate.retry_after_ms orelse 1000;

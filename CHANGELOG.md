@@ -1,5 +1,12 @@
 # What changed in each version
 
+## 0.6.7
+
+**Network and privacy**
+- The connection now looks like the Chrome it already claimed to be. The app sent Chrome's headers but connected the way OpenSSL does by default, so its connection fingerprint (JA4) said otherwise. Now the TLS handshake carries the same ciphers, groups, signatures and extensions as Chrome 156, with the same JA4. On Linux, the release binary also speaks HTTP/2 with Chrome's settings and accepts br and zstd, where it used to fall back to HTTP/1.1. Windows: still pending (the official curl build there keeps its own OpenSSL inside).
+- With the debug log on (Settings → Advanced), each request to Discord's API (method, path and status) and each gateway op that goes out (its number and server) is written down, with no token or content, to see what the app sent if the account ever gets flagged again.
+- `--tls-fingerprint` prints the app's TLS and HTTP/2 fingerprint, as a site that echoes it back sees it, and tools/tls_check.sh compares it with Chrome's. Neither uses a token.
+
 ## 0.6.6
 
 **Appearance**

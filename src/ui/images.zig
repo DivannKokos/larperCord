@@ -912,7 +912,7 @@ pub fn fetchEx(curl: *?*c.CURL, url: [:0]const u8, sink: Sink, stop: *std.atomic
         }
         _ = c.curl_easy_setopt(h, c.CURLOPT_FOLLOWLOCATION, @as(c_long, 0));
         _ = c.curl_easy_setopt(h, c.CURLOPT_PROTOCOLS_STR, "https");
-        _ = c.curl_easy_setopt(h, c.CURLOPT_ACCEPT_ENCODING, "");
+        _ = c.curl_easy_setopt(h, c.CURLOPT_ACCEPT_ENCODING, @import("../platform/sys.zig").acceptEncoding());
         // Proxy das configurações (mídia de fora, ou tudo).
         var pbuf: proxy.Buf = undefined;
         if (proxy.forUrl(&pbuf, cur_url)) |p| _ = c.curl_easy_setopt(h, c.CURLOPT_PROXY, p.ptr);

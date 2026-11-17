@@ -21,15 +21,17 @@ Zig · SDL3 · Dear ImGui · FreeType · zero Electron
 
 ### If Discord locks your account
 
-Discord disables accounts or forces a password reset when it thinks an account is a spam bot or was compromised. It can happen on any client, but third-party clients tend to trigger it more often. It already happened to this project's developer, after a day of testing. **Use a secondary account.**
+Discord disables accounts or forces a password reset when it thinks an account is a spam bot or was compromised. It can happen on any client, but third-party clients tend to trigger it more often. It already happened to this project's developer more than once: after a day of testing, and right after being kicked from a server. **Use a secondary account.**
 
 These are the usual triggers people report, so do them in the official client:
 
-- joining or leaving servers, the most common one
+- joining or leaving servers, the most common one, and being kicked or banned from one
 - disconnecting and reconnecting often, which includes restarting the app over and over
 - opening DMs with new people
 - changing your friends list
 - editing your profile while connected here
+
+Since 0.6.7 the connection itself looks like the Chrome the app says it is: the same TLS handshake (JA4) as Chrome and, in the Linux release, HTTP/2 with Chrome's settings (`tools/tls_check.sh` compares the two, without a token; Windows is still pending). With the debug log on (Settings → Advanced), each API request and gateway op that goes out is written down without the token or any content, so if your account gets flagged you can see what the app sent right before.
 
 If it happens, reset your password from discord.com. If the account stays locked, [appeal here](https://support.discord.com/hc/en-us/requests/new?ticket_form_id=360000029731). Discord doesn't publish these rules, so this list comes from the experience of people who make third-party clients.
 
@@ -323,6 +325,7 @@ Segoe UI Emoji from `C:\Windows\Fonts`.
 | `zig build test` | tests (KDL, colors, layout, markdown, Store, built-in themes, settings) |
 | `tools/snapshots.sh` | generates the screenshots in `docs/` without opening a window |
 | `tools/membench.sh 60` | measures RAM and CPU for each theme and fails over 60 MB |
+| `tools/tls_check.sh` | compares the app's TLS and HTTP/2 fingerprint with Chrome's, without a token |
 | `tools/qa_quadros.py BIN [--slow]` | checks frame skipping and hidden-window memory with a real window in Xvfb |
 | `zig build web -Demscripten=DIR` | the browser demo in WebAssembly ([how](tools/web/README.md)) |
 

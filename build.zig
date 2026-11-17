@@ -116,6 +116,10 @@ pub fn build(b: *std.Build) void {
     const qa = b.option(bool, "qa", "Inclui o robô de QA (--qa); padrão: só no debug") orelse !release;
     const build_options = b.addOptions();
     build_options.addOption(bool, "qa", qa);
+    // O TLS do Chrome (src/platform/tls_chrome.c) mexe no OpenSSL do curl: só onde ele é
+    // o mesmo que o app liga. O libcurl oficial do Windows traz o dele por dentro.
+    const tls_chrome = target.result.os.tag != .windows or single_exe;
+    build_options.addOption(bool, "tls_chrome", tls_chrome);
     // -Dversion: só para testar a atualização a partir de uma versão velha.
     build_options.addOption([]const u8, "version", b.option([]const u8, "version", "Versão gravada no executável") orelse @import("src/core/version.zig").number);
 
@@ -222,6 +226,7 @@ pub fn build(b: *std.Build) void {
     // Decodificador de imagens (PNG/JPEG/GIF) dos anexos; WebP vem da libwebp.
     mod.addIncludePath(b.path("third_party/stb"));
     mod.addCSourceFile(.{ .file = b.path("third_party/stb/stb_image.c"), .flags = &.{"-O2"} });
+    if (tls_chrome) mod.addCSourceFile(.{ .file = b.path("src/platform/tls_chrome.c"), .flags = &.{"-O2"} });
 
     // Voz: DAVE (E2EE) + MLS. Compilado junto porque só é usado quando
     // alguém entra numa chamada; parado, não custa CPU.
@@ -314,7 +319,13 @@ pub fn build(b: *std.Build) void {
         mod.linkSystemLibrary("libwebpdemux", .{});
         mod.linkSystemLibrary("opus", .{});
         mod.linkSystemLibrary("crypto", .{ .preferred_link_mode = if (portable) .static else .dynamic });
-        if (portable) mod.linkSystemLibrary("ssl", .{ .preferred_link_mode = .static });
+        // A libssl do curl: o TLS do Chrome mexe no SSL_CTX dele (src/platform/tls_chrome.c).
+        mod.linkSystemLibrary("ssl", .{ .preferred_link_mode = if (portable) .static else .dynamic });
+        // O HTTP/2, o br e o zstd do curl, e o brotli do certificado comprimido no
+        // OpenSSL (tools/linux_deps.sh): estáticos como eles.
+        if (portable) for ([_][]const u8{ "nghttp2", "zstd", "brotlienc", "brotlidec", "brotlicommon" }) |l| {
+            mod.linkSystemLibrary(l, .{ .use_pkg_config = .no, .preferred_link_mode = .static });
+        };
     }
 
     const exe = b.addExecutable(.{ .name = "larpercord", .root_module = mod });
@@ -350,6 +361,17 @@ pub fn build(b: *std.Build) void {
     addLua(b, test_mod);
     addRnnoise(b, test_mod);
     addFribidi(b, test_mod);
+    // O ClientHello do perfil do Chrome, montado com o OpenSSL do sistema (Linux; o CI e
+    // quem compila têm a libssl): src/net/tls_ja4.zig confere o JA4 dele.
+    const tls_test = target.result.os.tag == .linux and !portable;
+    const tls_test_opts = b.addOptions();
+    tls_test_opts.addOption(bool, "on", tls_test);
+    test_mod.addOptions("tls_test", tls_test_opts);
+    if (tls_test) {
+        test_mod.addCSourceFile(.{ .file = b.path("src/platform/tls_chrome.c"), .flags = &.{"-O2"} });
+        test_mod.linkSystemLibrary("ssl", .{});
+        test_mod.linkSystemLibrary("crypto", .{});
+    }
     const tests = b.addTest(.{ .root_module = test_mod });
     b.step("test", "Roda os testes").dependOn(&b.addRunArtifact(tests).step);
 
@@ -569,6 +591,7 @@ fn addWeb(b: *std.Build, native_c: *std.Build.Module, themes_mod: *std.Build.Mod
 fn webModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, c_mod: *std.Build.Module, themes_mod: *std.Build.Module, examples_mod: *std.Build.Module) *std.Build.Module {
     const options = b.addOptions();
     options.addOption(bool, "qa", false);
+    options.addOption(bool, "tls_chrome", false);
     options.addOption([]const u8, "version", @import("src/core/version.zig").number);
     const m = b.createModule(.{
         .root_source_file = b.path("src/web_main.zig"),

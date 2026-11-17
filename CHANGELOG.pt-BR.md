@@ -1,5 +1,12 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Rede e privacidade**
+- A conexão agora parece o Chrome que o app já dizia ser. O app mandava os cabeçalhos do Chrome, mas conectava do jeito padrão do OpenSSL, e a impressão da conexão (JA4) dizia outra coisa. Agora o aperto de mão TLS leva as mesmas cifras, grupos, assinaturas e extensões do Chrome 156, com o mesmo JA4. No Linux, o binário da release também fala HTTP/2 com as configurações do Chrome e aceita br e zstd, onde antes caía para HTTP/1.1. Windows: ainda pendente (o curl oficial de lá traz o próprio OpenSSL por dentro).
+- Com o registro de depuração ligado (Configurações → Avançado), cada pedido à API do Discord (método, caminho e status) e cada op que sai pelo gateway (o número e o servidor) ficam anotados, sem token nem conteúdo, para ver o que o app mandou se a conta for marcada de novo.
+- `--tls-fingerprint` mostra a impressão TLS e HTTP/2 do app, como um site que devolve o que recebeu a vê, e tools/tls_check.sh compara com a do Chrome. Nenhum dos dois usa token.
+
 ## 0.6.6
 
 **Aparência**

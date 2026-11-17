@@ -22,15 +22,17 @@ Zig · SDL3 · Dear ImGui · FreeType · zero Electron
 
 ### Se o Discord bloquear a sua conta
 
-O Discord desativa contas ou força a troca de senha quando acha que a conta é um bot de spam ou foi invadida. Isso pode acontecer em qualquer cliente, mas clientes de terceiros costumam disparar mais. Já aconteceu com quem desenvolve este projeto, depois de um dia de testes. **Use uma conta secundária.**
+O Discord desativa contas ou força a troca de senha quando acha que a conta é um bot de spam ou foi invadida. Isso pode acontecer em qualquer cliente, mas clientes de terceiros costumam disparar mais. Já aconteceu mais de uma vez com quem desenvolve este projeto: depois de um dia de testes, e logo depois de levar kick de um servidor. **Use uma conta secundária.**
 
 Estes são os gatilhos que as pessoas costumam relatar, então faça isso pelo cliente oficial:
 
-- entrar ou sair de servidores, o mais comum
+- entrar ou sair de servidores, o mais comum, e levar kick ou ban de um
 - desconectar e reconectar com frequência, o que inclui reiniciar o app várias vezes
 - abrir DMs com pessoas novas
 - mexer na lista de amigos
 - editar o perfil enquanto estiver conectado aqui
+
+Desde a 0.6.7, a própria conexão parece o Chrome que o app diz ser: o mesmo aperto de mão TLS (JA4) do Chrome e, na release de Linux, HTTP/2 com as configurações do Chrome (`tools/tls_check.sh` compara os dois, sem token; o Windows ainda está pendente). Com o registro de depuração ligado (Configurações → Avançado), cada pedido à API e cada op que sai pelo gateway ficam anotados, sem o token e sem conteúdo nenhum, para você ver o que o app mandou logo antes se a conta for marcada.
 
 Se acontecer, redefina a senha pelo discord.com. Se a conta continuar bloqueada, [faça uma apelação aqui](https://support.discord.com/hc/en-us/requests/new?ticket_form_id=360000029731). O Discord não publica essas regras, então a lista vem da experiência de quem faz clientes de terceiros.
 
@@ -324,6 +326,7 @@ Georgia e Segoe UI Emoji de `C:\Windows\Fonts`.
 | `zig build test` | testes (KDL, cores, layout, markdown, Store, temas embutidos, configurações) |
 | `tools/snapshots.sh` | gera os prints de `docs/` sem abrir janela |
 | `tools/membench.sh 60` | mede RAM e CPU de cada tema e falha se passar de 60 MB |
+| `tools/tls_check.sh` | compara a impressão TLS e HTTP/2 do app com a do Chrome, sem token |
 | `tools/qa_quadros.py BIN [--slow]` | confere o pulo de quadros e a memória com a janela escondida, com janela de verdade num Xvfb |
 | `zig build web -Demscripten=PASTA` | a demonstração no navegador em WebAssembly ([como](tools/web/README.pt-BR.md)) |
 
