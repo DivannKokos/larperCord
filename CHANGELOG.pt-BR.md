@@ -5,6 +5,9 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Texto em qualquer idioma**
+- Russo: 341 textos que tinham sido traduzidos por máquina (entre a 0.6.2 e a 0.6.6) voltaram para o inglês, como espaço reservado para alguém traduzir; outros 63 estão sendo reescritos no pull request do DivannKokos (#29). Tudo o que pIat0n e DivannKokos traduziram fica. `tools/i18n_strings.py --lang ru --check` diz quantos faltam, e o começo do i18n/ru.kdl explica como mandar uma tradução.
+
 ## 0.6.6
 
 **Aparência**
