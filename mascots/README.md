@@ -38,7 +38,7 @@ That's a whole mascot: three lines, no drawing. Everything below is optional.
 | Node | What it does |
 |---|---|
 | `mascot "name" author=… license=… description=…` | metadata. The name shows in the list of files |
-| `look eyes=… mouth=… hat=… ears=… accessories="…"` | parts from the library (lists below). Leave one out and it stays the default |
+| `look eyes=… mouth=… hat=… ears=… accessories="…" eye-height=… mouth-height=…` | parts from the library (lists below) and where the eyes and the mouth sit. Leave one out and it stays the default |
 | `colors palette="…"` or `colors body-top="#…" …` or `colors theme=#true` | the five colors (below) |
 | `eyes { … }` | your own eyes, drawn with shapes. Replaces `look eyes=` |
 | `mouth { … }` | your own mouth, drawn with shapes. Replaces `look mouth=` |
@@ -66,6 +66,18 @@ switch to the holiday hat.
 last one wins.
 
 **Ears** (`look ears=`): `pointy` (default), `round`, `floppy`, `bunny`, `tiny`, `none`.
+
+**Eye and mouth height** (`look eye-height=` and `look mouth-height=`, whole numbers in drawing units): move the
+eyes or the mouth up (positive) or down (negative) on the face, like the **Eye height** and **Mouth height**
+sliders in Customize. `0` (the default) is the usual place. The eyes go from −4 to 10 and the mouth from −4 to
+8; a number outside that is kept at the limit. The eyes never sit closer to the mouth than in the default
+drawing: `eye-height` is at least `mouth-height`, and when it isn't, the eyes go up to the mouth's height.
+Glasses, eye bags and the magnifier follow the eyes; the mustache, the mute tape and the gum follow the mouth;
+your own `eyes { … }` and `mouth { … }` drawings move too.
+
+```kdl
+look eyes="dots" mouth="cat" eye-height=4 mouth-height=-2
+```
 
 Every eye and every mouth has a version for each expression (happy, laughing, startled, angry, sad, asleep,
 dizzy, worried), plus blinking, looking around, eating and the error face.

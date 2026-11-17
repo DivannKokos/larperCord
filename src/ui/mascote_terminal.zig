@@ -473,7 +473,11 @@ fn figure(dl: *c.ImDrawList, base: Af, p: Pose, alpha: f32, tint: ?Rgba, small: 
     const eye_w = (if (small) @as(f32, 7.6) else 5.4) * fk;
     const ink_c = tones[2].alpha(alpha * (1 - p.flash));
     if (!p.no_face) {
-        const fb = brush.at(face);
+        // Os olhos e a boca na altura escolhida (Personalizar), andando com o rosto.
+        const eyes_m = partes.lifted(face, lk.eyeDy());
+        const mouth_m = partes.lifted(face, lk.mouthDy());
+        const eb = brush.at(eyes_m);
+        const mb = brush.at(mouth_m);
         const fin: partes.FaceIn = .{
             .face = p.face,
             .blink = p.squint,
@@ -488,14 +492,14 @@ fn figure(dl: *c.ImDrawList, base: Af, p: Pose, alpha: f32, tint: ?Rgba, small: 
             .mouth_open = p.mouth_open,
         };
         switch (lk.eyes) {
-            .prompt => promptEyes(dl, face, p, eye_w, fk, ink_c),
-            .custom => if (lk.drawing) |dw| customEyes(fb, dw, p),
-            else => partes.eyes(fb, lk.eyes, fin),
+            .prompt => promptEyes(dl, eyes_m, p, eye_w, fk, ink_c),
+            .custom => if (lk.drawing) |dw| customEyes(eb, dw, p),
+            else => partes.eyes(eb, lk.eyes, fin),
         }
         switch (lk.mouth) {
-            .smile => if (fin.dots) partes.mouth(fb, .smile, fin) else smileMouth(dl, face, p, fk, ink_c, alpha, small),
-            .custom => if (lk.drawing) |dw| customMouth(fb, dw, p, fin),
-            else => partes.mouth(fb, lk.mouth, fin),
+            .smile => if (fin.dots) partes.mouth(mb, .smile, fin) else smileMouth(dl, mouth_m, p, fk, ink_c, alpha, small),
+            .custom => if (lk.drawing) |dw| customMouth(mb, dw, p, fin),
+            else => partes.mouth(mb, lk.mouth, fin),
         }
     }
     // Gota de suor: aparece, escorre pela testa e cai.
@@ -1547,7 +1551,7 @@ fn faceOf(body: Af, p: Pose) Af {
 
 /// Olheiras (madrugada), embaixo de cada olho.
 fn bags(dl: *c.ImDrawList, base: Af, lk: [2]f32, tones: visual.Colors) void {
-    const face = base.mul(Af.move(lk[0] * 4, lk[1] * 2.6));
+    const face = partes.lifted(base.mul(Af.move(lk[0] * 4, lk[1] * 2.6)), look.eyeDy());
     const fk = face.k();
     const col = if (look.paint == .brand) Rgba.hex(0x4A1A8A).col(0.85) else tones[2].col(0.45);
     const one = look.eyes == .cyclops;
@@ -1565,7 +1569,7 @@ fn bags(dl: *c.ImDrawList, base: Af, lk: [2]f32, tones: visual.Colors) void {
 
 /// A fita na boca (microfone mudo).
 fn tape(dl: *c.ImDrawList, base: Af, lk: [2]f32) void {
-    const face = base.mul(Af.move(lk[0] * 4, lk[1] * 2.6));
+    const face = partes.lifted(base.mul(Af.move(lk[0] * 4, lk[1] * 2.6)), look.mouthDy());
     const m = face.around(mid_x, 70, Af.turn(-0.12));
     c.ImDrawList_AddQuadFilled(dl, m.ap(48, 65), m.ap(80, 65), m.ap(80, 75), m.ap(48, 75), Rgba.hex(0xD8D2C4).col(1));
     stroke(dl, &.{ m.ap(56, 67), m.ap(62, 73) }, @max(1.4 * face.k(), 0.8), Rgba.hex(0x9E978A));

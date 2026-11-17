@@ -1,5 +1,11 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Mascote**
+- Status invisível: o mascote do canto agora fica transparente como uma figura só. Antes cada peça ficava transparente sozinha, então as orelhas apareciam através do corpo onde se cobrem e, com chapéu, pareciam um par de óculos. Agora o mascote inteiro, com chapéu e fone, é desenhado de uma vez e some por igual. O clone do Ctrl+C some do mesmo jeito.
+- Configurações → Mascote → Personalizar ganhou os controles Altura dos olhos e Altura da boca, que sobem e descem os olhos e a boca no rosto, em todo estilo de olho e de boca e nos desenhos dos arquivos de mascote. Levar um até o outro empurra o outro junto, então nunca ficam mais perto do que no desenho de sempre. Os óculos, as olheiras e a lupa acompanham os olhos; o bigode, a fita do mudo e o chiclete acompanham a boca. As alturas aparecem onde o visual aparece e ficam salvas com ele e no "Salvar como arquivo" (`eye-height` e `mouth-height` nos arquivos de mascote, veja mascots/README.pt-BR.md). Padrão volta os dois ao lugar, e Desfazer desfaz um arraste inteiro. O japonês segue os textos novos; as duas linhas novas do russo ficam em inglês até alguém traduzir.
+
 ## 0.6.6
 
 **Aparência**

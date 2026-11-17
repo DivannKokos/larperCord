@@ -40,6 +40,7 @@ const contas = @import("mascote_contas.zig");
 const types = @import("../core/types.zig");
 const props = @import("mascote_props.zig");
 const i18n = @import("i18n.zig");
+const camada = @import("camada.zig");
 
 const Rgba = d.Rgba;
 
@@ -1243,7 +1244,7 @@ pub fn draw(ctx: *d.Ctx) void {
     const st = ctx.st;
     const status: types.Status = @fromBackingInt(@intCast(@min(st.settings.my_status, 3)));
     s.dnd = status == .dnd;
-    if (status == .offline) pl.alpha = 0.45;
+    if (status == .offline) pl.alpha = ghost_alpha;
     // Em call: fone de ouvido; com o microfone mudo, fita na boca.
     pl.headset = st.voice != null;
     pl.tape = pl.headset and st.muted;
@@ -1761,10 +1762,13 @@ pub fn draw(ctx: *d.Ctx) void {
         cl.alpha = pl.alpha * (1 - f) * 0.8;
         cl.flames = 0;
         cl.smoke_t = -1;
-        terminal.pet(dl, cx + contas.outCubic(f) * size * 0.95, cy - @sin(std.math.pi * f) * size * 0.15, dsize, cl);
+        petLayered(ctx, dl, &layers[1], cx + contas.outCubic(f) * size * 0.95, cy - @sin(std.math.pi * f) * size * 0.15, dsize, cl);
     }
     switch (kind) {
-        .terminal => terminal.pet(dl, cx, cy, dsize, pl),
+        .terminal => {
+            drawn = .{ cx, cy, dsize };
+            petLayered(ctx, dl, &layers[0], cx, cy, dsize, pl);
+        },
         .classico => {
             var pose: logo.Pose = .{ .glow = 0.3, .look = pl.look };
             pose.eyes = switch (pl.face) {
@@ -1786,7 +1790,7 @@ pub fn draw(ctx: *d.Ctx) void {
         .coffee => props.mug(dl, body, sip(at), tsec),
         .book => props.book(dl, body, at),
         .game => props.handheld(dl, body, at),
-        .gum => props.gum(dl, body, std.math.clamp(at / 2.2, 0, 1), if (at > 2.2) std.math.clamp((at - 2.2) / 0.4, 0, 1) else 0),
+        .gum => props.gum(dl, atMouth(body, kind), std.math.clamp(at / 2.2, 0, 1), if (at > 2.2) std.math.clamp((at - 2.2) / 0.4, 0, 1) else 0),
         // As notas na cor do texto: a de destaque é a do corpo dele.
         .whistle => props.notes(dl, body, at, ctx.col(.text)),
         .clean => props.rag(dl, body, at),
@@ -1837,10 +1841,43 @@ pub fn draw(ctx: *d.Ctx) void {
             if (g < 1) props.letter(dl, d.v(from.x + (to.x - from.x) * g, from.y + (to.y - from.y) * g - @sin(std.math.pi * g) * 20), 18 * (1 - g * 0.5), g * 6);
         };
     }
-    effects(dl, now, cx, cy_fx, size, asleep, sleep_from, rt);
+    effects(dl, now, cx, cy_fx, size, asleep, sleep_from, rt, if (kind == .terminal) terminal.look.eyeDy() else 0);
     badge(dl, status, cx, cy_fx, size, asleep);
     // O balão de fala.
     if (now < s.balloon_until) props.balloon(dl, ctx.ui.get(.medium), d.v(cx, cy_fx - size * 0.62), i18n.tr("Senti saudade!", "Missed you!"), ctx.col(.elevated), ctx.col(.text), 1, ctx.win);
+}
+
+/// A transparência do invisível.
+pub const ghost_alpha: f32 = 0.45;
+
+/// As camadas do mascote meio transparente: a dele e a do clone.
+var layers: [2]camada.Layer = .{ .{}, .{} };
+/// Onde o Terminal do canto saiu no último quadro (centro e tamanho): o QA confere os
+/// pixels do invisível.
+var drawn: [3]f32 = .{ 0, 0, 0 };
+pub fn qaDrawn() [3]f32 {
+    return drawn;
+}
+
+/// O Terminal do canto. Meio transparente (invisível, o clone sumindo), ele vai inteiro
+/// para uma camada e some por igual: com o alpha em cada peça, as orelhas, o chapéu e as
+/// pontas dos traços apareciam através do corpo, e as orelhas viravam um par de óculos.
+fn petLayered(ctx: *d.Ctx, dl: *c.ImDrawList, layer: *camada.Layer, cx: f32, cy: f32, size: f32, pl: terminal.PetLook) void {
+    if (pl.alpha >= 0.999) return terminal.pet(dl, cx, cy, size, pl);
+    const into = layer.begin(dl, ctx.images.renderer) orelse return terminal.pet(dl, cx, cy, size, pl);
+    var solid = pl;
+    solid.alpha = 1;
+    terminal.pet(into, cx, cy, size, solid);
+    layer.end(dl, pl.alpha);
+}
+
+/// O corpo para o que fica na boca (a bola de chiclete): acompanha a altura da boca do
+/// Terminal.
+fn atMouth(b: props.Body, kind: mascote.Kind) props.Body {
+    if (kind != .terminal) return b;
+    var o = b;
+    o.cy += terminal.look.mouthDy() * b.k();
+    return o;
 }
 
 /// A caneca subindo até a boca nos dois goles.
@@ -1874,7 +1911,8 @@ fn poke(now: i64) void {
 }
 
 /// Os enfeites de cada reação: corações, confete, "!", "Z", estrelinhas de tontura.
-fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: bool, sleep_from: i64, rt: f32) void {
+/// `eye_dy`: a altura dos olhos do Terminal (a lupa fica na frente do olho).
+fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: bool, sleep_from: i64, rt: f32, eye_dy: f32) void {
     const top = cy - size * 0.55;
     switch (s.react) {
         .love => for (0..4) |i| {
@@ -1944,7 +1982,7 @@ fn effects(dl: *c.ImDrawList, now: i64, cx: f32, cy: f32, size: f32, asleep: boo
         },
         .search => {
             // A lupa na frente do olho direito.
-            const eye = terminal.petPoint(cx, cy, size, 84 + @sin(rt * 4) * 6, 62);
+            const eye = terminal.petPoint(cx, cy, size, 84 + @sin(rt * 4) * 6, 62 + eye_dy);
             const lr = size * 0.17;
             const a = std.math.clamp(rt / 0.2, 0, 1) * std.math.clamp((reactionSeconds(.search) - rt) / 0.2, 0, 1);
             c.ImDrawList_AddCircleFilled(dl, eye, lr, Rgba.hex(0xBFEFFF).col(0.25 * a), 0);

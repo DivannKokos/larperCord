@@ -27,6 +27,12 @@ const gold_dark = Rgba.hex(0xC98A17);
 /// Onde ficam os olhos e a boca do ">_".
 pub const eye_l = [2]f32{ 40, 50 };
 pub const eye_r = [2]f32{ 84, 55 };
+
+/// `m` com o desenho descido `dy` (a altura dos olhos ou da boca). Sem mudança, a
+/// mesma transformação: o visual padrão sai igual, bit a bit.
+pub fn lifted(m: Af, dy: f32) Af {
+    return if (dy == 0) m else m.mul(Af.move(0, dy));
+}
 /// A inclinação do rosto (o olho direito fica mais baixo).
 const tilt: f32 = 0.1131;
 
@@ -991,7 +997,8 @@ fn note(b: Brush, x: f32, y: f32) void {
 // --- Acessórios -------------------------------------------------------------------------
 
 /// Os acessórios do rosto (bochechas, sardas, bigode, curativo e os óculos) em `face`,
-/// e os do corpo (pescoço e brinco) em `body`.
+/// e os do corpo (pescoço e brinco) em `body`. Os óculos acompanham a altura dos olhos,
+/// e o bigode, a da boca.
 pub fn accessories(body: Brush, face: Brush, l: *const v.Look, show_face: bool) void {
     if (l.acc == 0) return;
     if (show_face) {
@@ -1007,13 +1014,14 @@ pub fn accessories(body: Brush, face: Brush, l: *const v.Look, show_face: bool) 
             for ([_][2]f32{ .{ 25, 61.4 }, .{ 29.4, 64.2 }, .{ 33.4, 61 }, .{ 27.8, 58.6 }, .{ 94, 65.8 }, .{ 98, 68.6 }, .{ 102, 65.4 }, .{ 99.4, 62.6 } }) |q| circle(face, q[0], q[1], fr, face.inkA(0.5));
         }
         if (l.has(.bandaid)) bandaid(face, 101, 37.5);
-        if (l.has(.mustache)) mustache(face);
+        if (l.has(.mustache)) mustache(face.at(lifted(face.m, l.mouthDy())));
         var spots: [2][2]f32 = undefined;
         const ns = eyeSpots(l.eyes, &spots);
-        if (l.has(.glasses)) glasses(face, spots[0..ns]);
-        if (l.has(.shades)) shades(face, spots[0..ns]);
-        if (l.has(.monocle)) monocle(face, spots[ns - 1]);
-        if (l.has(.eyepatch)) eyepatch(face, spots[0]);
+        const eyes_b = face.at(lifted(face.m, l.eyeDy()));
+        if (l.has(.glasses)) glasses(eyes_b, spots[0..ns]);
+        if (l.has(.shades)) shades(eyes_b, spots[0..ns]);
+        if (l.has(.monocle)) monocle(eyes_b, spots[ns - 1]);
+        if (l.has(.eyepatch)) eyepatch(eyes_b, spots[0]);
     }
     if (l.has(.earring)) earring(body);
     if (l.has(.scarf)) scarf(body);

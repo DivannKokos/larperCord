@@ -237,10 +237,21 @@ fn utf8Cut(s: []const u8, max: usize) usize {
     return k;
 }
 
+/// Até onde vão a altura dos olhos e a da boca, em unidades do desenho (+ sobe): os
+/// olhos sobem até a testa sem chegar no chapéu, e a boca aberta (comendo) desce até
+/// perto dos pés sem sair do corpo.
+pub const eye_height_range = [2]i8{ -4, 10 };
+pub const mouth_height_range = [2]i8{ -4, 8 };
+
 /// Um visual inteiro.
 pub const Look = struct {
     eyes: Eyes = .prompt,
     mouth: Mouth = .smile,
+    /// A altura dos olhos e a da boca no rosto (+ sobe, - desce; 0 é o lugar de
+    /// sempre). Os olhos nunca chegam mais perto da boca do que no desenho:
+    /// `eye_height` >= `mouth_height` (ver `fixHeights`).
+    eye_height: i8 = 0,
+    mouth_height: i8 = 0,
     hat: Hat = .none,
     ears: Ears = .pointy,
     /// Um bit por `Acc`.
@@ -271,9 +282,39 @@ pub const Look = struct {
         l.acc |= b;
     }
 
+    /// Põe as alturas nos limites, com os olhos nunca abaixo da boca (os dois juntos
+    /// demais: os olhos sobem até a altura dela).
+    pub fn fixHeights(l: *Look) void {
+        l.eye_height = std.math.clamp(l.eye_height, eye_height_range[0], eye_height_range[1]);
+        l.mouth_height = std.math.clamp(l.mouth_height, mouth_height_range[0], mouth_height_range[1]);
+        if (l.eye_height < l.mouth_height) l.eye_height = l.mouth_height;
+    }
+
+    /// Muda a altura dos olhos; descendo até a boca, empurram a boca junto.
+    pub fn setEyeHeight(l: *Look, h: i8) void {
+        l.eye_height = std.math.clamp(h, eye_height_range[0], eye_height_range[1]);
+        if (l.mouth_height > l.eye_height) l.mouth_height = @max(l.eye_height, mouth_height_range[0]);
+        l.fixHeights();
+    }
+
+    /// Muda a altura da boca; subindo até os olhos, empurra os olhos junto.
+    pub fn setMouthHeight(l: *Look, h: i8) void {
+        l.mouth_height = std.math.clamp(h, mouth_height_range[0], mouth_height_range[1]);
+        l.fixHeights();
+    }
+
+    /// Quanto os olhos e a boca andam no y do desenho (que cresce para baixo).
+    pub fn eyeDy(l: *const Look) f32 {
+        return -@as(f32, @floatFromInt(l.eye_height));
+    }
+    pub fn mouthDy(l: *const Look) f32 {
+        return -@as(f32, @floatFromInt(l.mouth_height));
+    }
+
     /// Mesmo visual (os desenhos contam pelo arquivo de onde vêm).
     pub fn eql(a: *const Look, b: *const Look) bool {
         if (a.eyes != b.eyes or a.mouth != b.mouth or a.hat != b.hat or a.ears != b.ears or a.acc != b.acc or a.paint != b.paint) return false;
+        if (a.eye_height != b.eye_height or a.mouth_height != b.mouth_height) return false;
         if (!a.draw_from.eql(&b.draw_from)) return false;
         if (a.paint != .custom) return true;
         if (a.palette != b.palette) return false;
@@ -424,6 +465,14 @@ fn compactTo(l: *const Look, w: *std.Io.Writer) !void {
         try sep(w, &first);
         try w.print("mouth={s}", .{mouth_info[@intFromEnum(l.mouth)].id});
     }
+    if (l.eye_height != 0) {
+        try sep(w, &first);
+        try w.print("eye-height={d}", .{l.eye_height});
+    }
+    if (l.mouth_height != 0) {
+        try sep(w, &first);
+        try w.print("mouth-height={d}", .{l.mouth_height});
+    }
     if (l.hat != .none) {
         try sep(w, &first);
         try w.print("hat={s}", .{hat_info[@intFromEnum(l.hat)].id});
@@ -535,6 +584,10 @@ pub fn parseCompact(text: []const u8) Look {
             if (eyesFrom(v)) |e| l.eyes = e;
         } else if (std.mem.eql(u8, k, "mouth")) {
             if (mouthFrom(v)) |m| l.mouth = m;
+        } else if (std.mem.eql(u8, k, "eye-height")) {
+            if (heightFrom(v)) |h| l.eye_height = h;
+        } else if (std.mem.eql(u8, k, "mouth-height")) {
+            if (heightFrom(v)) |h| l.mouth_height = h;
         } else if (std.mem.eql(u8, k, "hat")) {
             if (hatFrom(v)) |h| l.hat = h;
         } else if (std.mem.eql(u8, k, "ears")) {
@@ -588,7 +641,14 @@ pub fn parseCompact(text: []const u8) Look {
         if (l.eyes == .custom) l.eyes = .prompt;
         if (l.mouth == .custom) l.mouth = .smile;
     }
+    l.fixHeights();
     return l;
+}
+
+/// Uma altura escrita no texto curto (inteira; os limites ficam com `fixHeights`).
+fn heightFrom(s: []const u8) ?i8 {
+    const x = std.fmt.parseInt(i32, s, 10) catch return null;
+    return @intCast(std.math.clamp(x, -100, 100));
 }
 
 /// Liga sem desligar (ler um texto não alterna).
@@ -809,6 +869,7 @@ pub fn parseFile(gpa: std.mem.Allocator, arena: std.mem.Allocator, src: []const 
         if (p.dw) |d| gpa.destroy(d);
         return null;
     };
+    file.look.fixHeights();
     file.drawing = p.dw;
     if (p.dw) |d| {
         file.look.drawing = d;
@@ -845,6 +906,15 @@ fn readNodes(p: *Parser, nodes: []const kdl.Node, file: *File) !void {
 
 fn readLook(p: *Parser, n: *const kdl.Node, l: *Look) !void {
     for (n.props) |pr| {
+        // As alturas são números (inteiros; fora dos limites, apertadas).
+        const eye_h = std.mem.eql(u8, pr.key, "eye-height");
+        if (eye_h or std.mem.eql(u8, pr.key, "mouth-height")) {
+            const x = pr.value.asNumber() orelse return p.fail(n, .bad_number);
+            if (!std.math.isFinite(x)) return p.fail(n, .bad_number);
+            const h: i8 = @intFromFloat(std.math.clamp(@round(x), -100, 100));
+            if (eye_h) l.eye_height = h else l.mouth_height = h;
+            continue;
+        }
         const v = pr.value.asString() orelse return p.fail(n, .unknown_part);
         if (std.mem.eql(u8, pr.key, "eyes")) {
             const e = eyesFrom(v) orelse return p.fail(n, .unknown_part);
@@ -1194,6 +1264,8 @@ pub fn writeFile(l: *const Look, meta: Meta, out: *std.ArrayList(u8), gpa: std.m
         };
         try o.writeByte('"');
     }
+    if (l.eye_height != 0) try o.print(" eye-height={d}", .{l.eye_height});
+    if (l.mouth_height != 0) try o.print(" mouth-height={d}", .{l.mouth_height});
     try o.writeByte('\n');
     switch (l.paint) {
         .brand => try o.writeAll("// No `colors`: the default purple (the corner mascot follows the theme accent).\n"),
@@ -1378,6 +1450,8 @@ test "texto curto: escrever e ler dá o mesmo visual (prontos, sorteados e cores
     own.colors = hexColors(.{ 0x112233, 0x445566, 0xFFEEDD, 0x778899, 0xAABBCC });
     own.colors[4].a = 0.5;
     own.draw_from.set("meu mascote=100%");
+    own.eye_height = 7;
+    own.mouth_height = -3;
     const t = writeCompact(&own, &buf);
     try testing.expect(t.len < 255);
     const back = parseCompact(t);
@@ -1418,6 +1492,93 @@ test "acessórios do mesmo grupo se excluem" {
     try testing.expect(!l.has(.scarf) and l.has(.bowtie) and l.has(.blush) and l.has(.monocle));
     l.toggle(.blush);
     try testing.expect(!l.has(.blush));
+}
+
+test "altura dos olhos e da boca: o padrão não escreve nada, e o texto curto e o arquivo voltam iguais" {
+    var buf: [256]u8 = undefined;
+    // Na altura de sempre, nada muda no que fica salvo.
+    const plain: Look = .{ .eyes = .stars };
+    try testing.expectEqualStrings("eyes=stars", writeCompact(&plain, &buf));
+    var out: std.ArrayList(u8) = .empty;
+    defer out.deinit(testing.allocator);
+    try writeFile(&plain, .{ .title = "x" }, &out, testing.allocator);
+    try testing.expect(std.mem.indexOf(u8, out.items, "height") == null);
+
+    var l: Look = .{ .eyes = .cat, .mouth = .fang };
+    l.setEyeHeight(6);
+    l.setMouthHeight(-2);
+    try testing.expectEqual(@as(i8, 6), l.eye_height);
+    try testing.expectEqual(@as(i8, -2), l.mouth_height);
+    try testing.expect(!l.eql(&.{ .eyes = .cat, .mouth = .fang }));
+    const t = writeCompact(&l, &buf);
+    try testing.expect(std.mem.indexOf(u8, t, "eye-height=6") != null and std.mem.indexOf(u8, t, "mouth-height=-2") != null);
+    try testing.expect(parseCompact(t).eql(&l));
+
+    // O arquivo ("Salvar como arquivo") escreve as duas chaves e lê de volta.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    out.clearRetainingCapacity();
+    try writeFile(&l, .{ .title = "Alto" }, &out, testing.allocator);
+    try testing.expect(std.mem.indexOf(u8, out.items, " eye-height=6 mouth-height=-2\n") != null);
+    var pr: Problem = .{};
+    const f = parseFile(testing.allocator, arena.allocator(), out.items, &pr) orelse {
+        std.debug.print("{s}\n{d}:{d} {s}\n", .{ out.items, pr.line, pr.col, @tagName(pr.issue) });
+        return error.Parse;
+    };
+    try testing.expect(f.look.eql(&l));
+
+    // Escrito à mão: número quebrado arredonda, fora dos limites aperta.
+    const g = parseFile(testing.allocator, arena.allocator(), "look eye-height=2.6 mouth-height=-1e9\n", &pr).?;
+    try testing.expectEqual(@as(i8, 3), g.look.eye_height);
+    try testing.expectEqual(mouth_height_range[0], g.look.mouth_height);
+    // Uma altura que não é número é erro, com a linha.
+    try testing.expect(parseFile(testing.allocator, arena.allocator(), "mascot \"x\"\nlook eye-height=\"alto\"\n", &pr) == null);
+    try testing.expectEqual(Issue.bad_number, pr.issue);
+    try testing.expectEqual(@as(u32, 2), pr.line);
+    try testing.expect(parseFile(testing.allocator, arena.allocator(), "look mouth-height=#true\n", &pr) == null);
+    try testing.expectEqual(Issue.bad_number, pr.issue);
+}
+
+test "altura: os limites, e os olhos e a boca se empurram sem nunca se cruzar" {
+    var l: Look = .{};
+    l.setEyeHeight(100);
+    try testing.expectEqual(eye_height_range[1], l.eye_height);
+    l.setMouthHeight(-100);
+    try testing.expectEqual(mouth_height_range[0], l.mouth_height);
+    // Os olhos descendo até a boca levam a boca junto.
+    l = .{};
+    l.setMouthHeight(2);
+    try testing.expectEqual(@as(i8, 2), l.eye_height);
+    l.setEyeHeight(-3);
+    try testing.expectEqual(@as(i8, -3), l.eye_height);
+    try testing.expectEqual(@as(i8, -3), l.mouth_height);
+    l.setEyeHeight(eye_height_range[0]);
+    try testing.expectEqual(l.eye_height, l.mouth_height);
+    // A boca subindo até os olhos leva os olhos junto, até o alto da boca.
+    l.setMouthHeight(100);
+    try testing.expectEqual(mouth_height_range[1], l.mouth_height);
+    try testing.expectEqual(mouth_height_range[1], l.eye_height);
+    // Texto curto com os dois cruzados (escrito à mão, ou de uma versão estranha): os
+    // olhos sobem até a boca; lixo fica no padrão.
+    const crossed = parseCompact("eye-height=-4 mouth-height=5");
+    try testing.expectEqual(@as(i8, 5), crossed.eye_height);
+    try testing.expectEqual(@as(i8, 5), crossed.mouth_height);
+    const junk = parseCompact("eye-height=x mouth-height= eye-height=99999999999");
+    try testing.expectEqual(@as(i8, 0), junk.eye_height);
+    try testing.expectEqual(@as(i8, 0), junk.mouth_height);
+    try testing.expectEqual(eye_height_range[1], parseCompact("eye-height=40").eye_height);
+    // Todo par dentro dos limites sai com os olhos na altura da boca ou acima.
+    var e: i8 = -20;
+    while (e <= 20) : (e += 1) {
+        var m: i8 = -20;
+        while (m <= 20) : (m += 1) {
+            var a: Look = .{ .eye_height = e, .mouth_height = m };
+            a.fixHeights();
+            try testing.expect(a.eye_height >= a.mouth_height);
+            try testing.expect(a.eye_height >= eye_height_range[0] and a.eye_height <= eye_height_range[1]);
+            try testing.expect(a.mouth_height >= mouth_height_range[0] and a.mouth_height <= mouth_height_range[1]);
+        }
+    }
 }
 
 test "o sorteio respeita os grupos e nunca tira peça do arquivo nem chapéu de data" {
