@@ -8,6 +8,9 @@
 **Mensagens**
 - Mensagem com um `*` sozinho (ou `**`, `~~`, `||` sem nada que feche) não some mais: o marcador se engolia e levava o resto da mensagem para o estilo, então uma mensagem que era só "*" aparecia vazia. Agora o marcador só dá estilo quando tem par, como no Discord, e senão aparece como foi digitado. `2 * 3 * 4` também aparece como foi digitado.
 
+**Servidores**
+- Levou kick ou ban de um servidor (ou saiu dele): nada mais vai para lá. A lista de membros do canal que estava aberto lá não é pedida de novo a cada reconexão, o que esperava para ir para ele é descartado, e a call de lá acaba quieta em vez de tentar voltar com o token velho. O mesmo quando acontece com a conexão caída e a sessão nova simplesmente não traz o servidor de volta.
+
 ## 0.6.6
 
 **Aparência**

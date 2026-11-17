@@ -8,6 +8,9 @@
 **Messages**
 - A message with a lone `*` (or `**`, `~~`, `||` with nothing to close it) no longer vanishes: the marker used to swallow itself and turn the rest of the message into that style, so a message that was just "*" came out empty. Now a marker only styles text when there is one to close it, like Discord, and otherwise shows as typed. `2 * 3 * 4` shows as typed too.
 
+**Servers**
+- Kicked or banned from a server (or you left it): nothing goes to it anymore. The member list of the channel that was open there is no longer asked for again on every reconnect, what was waiting to be sent to it is dropped, and a call there ends quietly instead of trying to reconnect with the old token. The same when it happens while the connection is down and the new session just doesn't bring the server back.
+
 ## 0.6.6
 
 **Appearance**
