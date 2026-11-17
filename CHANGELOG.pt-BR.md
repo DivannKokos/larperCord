@@ -5,6 +5,11 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Mídia e GIFs**
+- Arquivos de áudio mandados no chat (.mp3, .ogg, .wav, .flac, .m4a…) agora tocam na própria conversa, em vez de só baixar. O player mostra a forma de onda do arquivo inteiro como barra (o que já tocou na cor de destaque do tema; clique ou arraste para pular, e o mouse em cima mostra o tempo daquele ponto), o tempo atual e o total, o nome e o tamanho do arquivo, um botão de velocidade (1×, 1,5×, 2×) e um de baixar. Com o mouse em cima, espaço toca ou pausa e ← → pulam 5 segundos (quando nenhuma caixa de texto está com o foco). As capas de spoiler e de conteúdo sensível continuam cobrindo até o clique.
+- Ogg Opus, MP3 e WAV/AIFF tocam sem instalar nada: MP3 e WAV pelo dr_mp3 e dr_wav (do dr_libs, domínio público), embutidos no app. FLAC, Ogg Vorbis, AAC/M4A e outros tocam pelo FFmpeg quando ele está instalado (o mesmo dos vídeos); sem ele, ficam como cartão de arquivo, avisando. Arquivos de até 32 MB. O som vai para o dispositivo de saída e o volume escolhidos em Configurações → Voz, um áudio por vez, e para quando você sai da conversa ou a janela vai para a bandeja.
+- Enquanto um áudio ou uma mensagem de voz toca, barrinhas dançam com o som: ao lado do nome do arquivo e em volta do botão de tocar das mensagens de voz. Elas só andam tocando, com a janela em foco e sem "Reduzir movimento"; fora isso, só a barra de progresso anda, e pausado nada é redesenhado. Configurações → Chat → Visualizador de áudio desliga.
+
 ## 0.6.6
 
 **Aparência**

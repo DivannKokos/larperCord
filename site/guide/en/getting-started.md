@@ -95,7 +95,7 @@ zig build -Doptimize=ReleaseFast
 ./zig-out/bin/larpercord --demo
 ```
 
-Everything else is already in the repository: Dear ImGui, Lua, stb_image, libdave, MLSpp and nlohmann/json are copied into `third_party/`, so the Linux build downloads nothing.
+Everything else is already in the repository: Dear ImGui, Lua, stb_image, dr_mp3, dr_wav, libdave, MLSpp and nlohmann/json are copied into `third_party/`, so the Linux build downloads nothing.
 
 The Windows version is built from Linux too. `tools/windows_deps.sh` downloads its libraries once, at fixed versions with checked hashes:
 

@@ -5,6 +5,11 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Media and GIFs**
+- Audio files sent in chat (.mp3, .ogg, .wav, .flac, .m4a…) now play right in the conversation instead of only downloading. The player shows the waveform of the whole file as its seek bar (the part already played in the theme's accent color; click or drag to jump, hover to see the time at that point), the current and total time, the file name and size, a speed button (1×, 1.5×, 2×) and a download button. With the mouse over it, Space plays or pauses and ← → skip 5 seconds (when no text box has focus). Spoiler and sensitive covers still hide it until clicked.
+- Ogg Opus, MP3 and WAV/AIFF play with no extra install: MP3 and WAV through dr_mp3 and dr_wav (from dr_libs, public domain), built into the app. FLAC, Ogg Vorbis, AAC/M4A and others play through FFmpeg when it's installed (the same one videos use); without it they stay a file card that says so. Files up to 32 MB. The sound goes to the output device and volume chosen in Settings → Voice, one audio at a time, and it stops when you leave that conversation or the window goes to the tray.
+- While audio or a voice message plays, small bars dance to the sound: next to the file name, and around the play button of voice messages. They only move while playing, with the window focused and without "Reduce motion"; otherwise only the progress bar moves, and paused nothing is redrawn. Settings → Chat → Audio visualizer turns them off.
+
 ## 0.6.6
 
 **Appearance**

@@ -150,7 +150,10 @@ The official client is a whole browser dressed up as an app. On the same PC:
   that didn't load). It also animates old Tenor GIFs that only exist as MP4.
 - **Media**: spoilers and sensitive media stay covered until you click, with nothing downloaded before;
   expired Discord image links are refreshed on their own; voice messages have a player with a waveform;
-  long GIFs play every frame, and a star on any GIF adds it to your favorites.
+  audio files (.mp3, .ogg, .wav, .flac, .m4a…) play in the conversation, with the whole file's waveform
+  as the seek bar, 1×/1.5×/2× speed and small bars that dance while it plays (Opus, MP3 and WAV with
+  nothing installed, the rest through FFmpeg); long GIFs play every frame, and a star on any GIF adds it
+  to your favorites.
 - **Proxy** (HTTP, HTTPS, SOCKS5, SOCKS5h; Tor at `socks5h://127.0.0.1:9050`), with separate fields for
   the address, port, login and password, for media from outside Discord or for everything except voice
   calls, which always connect directly (Settings → Network). The sign-in screen has it too ("Connect
@@ -356,7 +359,8 @@ src/
   ui/         components, rich text, palette, settings, animations
   platform/   window, renderer, "wake the loop"; the only place that knows SDL
 themes/       the built-in themes (also compiled into the binary)
-third_party/  Dear ImGui 1.93 + dear_bindings (C), with a small patch for bitmap emoji; GNU FriBidi
+third_party/  Dear ImGui 1.93 + dear_bindings (C), with a small patch for bitmap emoji; GNU FriBidi;
+              dr_mp3 + dr_wav (audio attachments)
 ```
 
 The flow is **UI → `Action` → app → `Command` → gateway → `Event` → Store → UI**.
@@ -393,5 +397,5 @@ swapping the fake gateway for the real one doesn't touch the UI.
 
 ## License
 
-larperCord is licensed under the [GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`). Third-party code keeps its own license, in each folder of `third_party/`: Dear ImGui and dear_bindings are MIT, RNNoise is BSD, GNU FriBidi is LGPL-2.1 or later. The file
+larperCord is licensed under the [GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`). Third-party code keeps its own license, in each folder of `third_party/`: Dear ImGui and dear_bindings are MIT, RNNoise is BSD, GNU FriBidi is LGPL-2.1 or later, dr_mp3 and dr_wav (dr_libs) are public domain or MIT No Attribution. The file
 `third_party/imgui/misc/freetype/imgui_freetype.cpp` has changes marked with `[larperCord]`.

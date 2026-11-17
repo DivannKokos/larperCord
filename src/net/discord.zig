@@ -55,6 +55,7 @@ const conta_net = @import("conta_net.zig");
 const social = @import("social.zig");
 const dm_order = @import("../core/dm_order.zig");
 const media_flags = @import("../core/media_flags.zig");
+const audio_formato = @import("../core/audio_formato.zig");
 const media_refresh = @import("../core/media_refresh.zig");
 const stickers = @import("../core/stickers.zig");
 const rpc_proto = @import("rpc_proto.zig");
@@ -2297,6 +2298,8 @@ pub const Gateway = struct {
             const aflags = media_flags.flagsValue(j.int(j.get(a, "flags")));
             // Mensagem de voz: o Ogg Opus com a duração e a forma de onda.
             const voice = voice_msg and std.mem.startsWith(u8, ctype, "audio/");
+            // Outro áudio (música, gravação): o player de ui/audio_card.zig.
+            const audio = !voice and !image and audio_formato.tipoDeAudio(ctype);
             var att: types.Attachment = .{
                 .url = try alloc.dupe(u8, url),
                 .filename = undefined,
@@ -2309,6 +2312,7 @@ pub const Gateway = struct {
                 .spoiler = media_flags.spoilerAttachment(name, aflags),
                 .sensitive = media_flags.sensitive(aflags),
                 .voice = voice,
+                .audio = audio,
             };
             errdefer alloc.free(att.url);
             att.filename = try alloc.dupe(u8, name);

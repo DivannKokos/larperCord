@@ -196,6 +196,8 @@ fn ensureAudio() bool {
 
 fn start(ctx: *d.Ctx, key: u64, link: []const u8, page: []const u8, r: d.Rect) bool {
     stop();
+    // Um som por vez: o áudio (ou a mensagem de voz) tocando pausa.
+    @import("audio_player.zig").pausar();
     const scale = ctx.io.*.DisplayFramebufferScale.x;
     const mutex = c.SDL_CreateMutex() orelse return false;
     const cond = c.SDL_CreateCondition() orelse {

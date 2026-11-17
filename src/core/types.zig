@@ -371,6 +371,9 @@ pub const Attachment = struct {
     voice: bool = false,
     voice_ms: u32 = 0,
     wave: [wave_bars]u8 = @splat(0),
+    /// Áudio pelo `content_type` (audio/*), sem ser mensagem de voz: vira o player
+    /// de ui/audio_card.zig (a extensão do nome também serve, core/audio_formato.zig).
+    audio: bool = false,
 
     pub fn isImage(a: *const Attachment) bool {
         return a.width > 0 and a.height > 0;

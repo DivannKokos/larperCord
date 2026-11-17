@@ -1017,6 +1017,8 @@ fn page(p: *Page, previews: []const Preview) void {
             p.toggle(i18n.tr("Mostrar imagens de links", "Show images from links"), i18n.tr("Imagens e GIFs de links mandados na conversa.", "Images and GIFs from links posted in chat."), &s.show_embeds);
             p.toggle(i18n.tr("Modo economia", "Data saver"), i18n.tr("Imagens, fotos de perfil e anexos só baixam quando você clica. Bom em rede ruim.", "Images, profile pictures and attachments only download when you click. Good on bad networks."), &s.data_saver);
             @import("settings_video.zig").section(p);
+            p.heading(i18n.tr("Áudio", "Audio"));
+            p.toggle(i18n.tr("Visualizador de áudio", "Audio visualizer"), i18n.tr("Barrinhas que dançam com o som enquanto um áudio ou uma mensagem de voz toca, com a janela em foco. Desligado, só a barra de progresso anda, com bem menos quadros por segundo.", "Little bars that dance to the sound while audio or a voice message plays, with the window focused. When off, only the progress bar moves, with far fewer frames per second."), &s.audio_visualizer);
             p.heading(i18n.tr("Conteúdo", "Content"));
             p.toggle(i18n.tr("Sempre mostrar spoilers", "Always show spoilers"), i18n.tr("Revela o texto ||escondido|| sem precisar clicar.", "Reveals ||hidden|| text without clicking."), &s.show_spoilers);
             p.heading(i18n.tr("Leitura", "Reading"));
@@ -1657,5 +1659,5 @@ fn about(p: *Page) void {
     p.heading(i18n.tr("Feito com", "Built with"));
     // O build do Windows não tem fontconfig e usa as fontes do sistema (ui/fonts.zig).
     const fonts_line = if (sys.windows) i18n.tr("Segoe UI, Consolas, Segoe UI Emoji (fontes do Windows)", "Segoe UI, Consolas, Segoe UI Emoji (Windows fonts)") else "Inter, JetBrains Mono, Noto Color Emoji";
-    for ([_][]const u8{ "Zig 0.17", "SDL 3.4", "Dear ImGui 1.93 (dear_bindings)", if (sys.windows) "FreeType" else "FreeType + fontconfig", "GNU FriBidi", "libcurl + zlib", "stb_image", "Lua 5.4 (plugins)", fonts_line }) |t| p.note(t);
+    for ([_][]const u8{ "Zig 0.17", "SDL 3.4", "Dear ImGui 1.93 (dear_bindings)", if (sys.windows) "FreeType" else "FreeType + fontconfig", "GNU FriBidi", "libcurl + zlib", "stb_image", "dr_mp3 + dr_wav", "Lua 5.4 (plugins)", fonts_line }) |t| p.note(t);
 }

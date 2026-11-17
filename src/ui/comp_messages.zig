@@ -205,7 +205,7 @@ fn measure(ctx: *d.Ctx, g: Geo, m: *StoredMessage, flags: u8) f32 {
     const self = m.msg.author == ctx.store.me;
     const t = rich.layout(null, ctx.store, ctx.th, m.spans, 0, 0, g.wrap, textOpts(ctx, g, self and g.variant == .bubbles), ctx.mouse);
     var text_h = textH(g, m, t);
-    text_h += att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0);
+    text_h += att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0, m.msg.id);
     text_h += emb.block(ctx, null, m, 0, 0, g.wrap, 1, .{});
     text_h += threads.cardHeight(ctx, m);
     if (decoIndex(true)) |dx| {
@@ -245,7 +245,7 @@ fn measure(ctx: *d.Ctx, g: Geo, m: *StoredMessage, flags: u8) f32 {
     m.height = h;
     // O balão cabe o texto e o rótulo depois dele: "(editado)" ou, no registro, "(apagada)"
     // (numa linha alinhada à direita, ele fica antes dela, à esquerda, dentro do balão).
-    m.natural_w = @max(@max(t.w, if (m.msg.edited or m.deleted) t.last_x + markW(g, m) else 0), att.blockWidth(m.msg.attachments, g.wrap));
+    m.natural_w = @max(@max(t.w, if (m.msg.edited or m.deleted) t.last_x + markW(g, m) else 0), att.blockWidth(m.msg.attachments, g.wrap, m.msg.id));
     if (m.msg.embeds.len > 0) m.natural_w = @max(m.natural_w, @min(g.wrap, 520));
     if (emb.hasInvite(m)) m.natural_w = @max(m.natural_w, @min(g.wrap, emb.invite_w));
     if (m.msg.thread != 0) m.natural_w = @max(m.natural_w, @min(g.wrap, threads.card_w));
@@ -1435,7 +1435,7 @@ fn drawMessage(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, flags:
             textMarks(m, tx, y, g.wrap, t);
             const th = textH(g, m, t);
             att.draw(ctx, dl, m, tx, y + th, g.wrap, alpha);
-            var ah = att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0);
+            var ah = att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0, m.msg.id);
             ah += emb.block(ctx, dl, m, tx, y + th + ah, g.wrap, alpha, .{ .from = sel_from, .to = sel_to, .probe = probe });
             ah += threads.card(ctx, dl, m, tx, y + th + ah, g.wrap);
             ah += decoBlock(ctx, dl, g, m, tx, y + th + ah);
@@ -1517,7 +1517,7 @@ fn drawMessage(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, flags:
             textMarks(m, r.x + g.content_x, y, g.wrap, t);
             const th = textH(g, m, t);
             att.draw(ctx, dl, m, r.x + g.content_x, y + th, g.wrap, alpha);
-            var ah = att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0);
+            var ah = att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0, m.msg.id);
             ah += emb.block(ctx, dl, m, r.x + g.content_x, y + th + ah, g.wrap, alpha, .{ .from = sel_from, .to = sel_to, .probe = probe });
             ah += threads.card(ctx, dl, m, r.x + g.content_x, y + th + ah, g.wrap);
             ah += decoBlock(ctx, dl, g, m, r.x + g.content_x, y + th + ah);
@@ -1579,7 +1579,7 @@ fn drawMessage(ctx: *d.Ctx, dl: *c.ImDrawList, g: Geo, m: *StoredMessage, flags:
             _ = editedMark(ctx, dl, g, m, br.x + 14, ty, t);
             textMarks(m, br.x + 14, ty, ob.align_w, t);
             att.draw(ctx, dl, m, br.x + 14, ty + textH(g, m, t), g.wrap, alpha);
-            const below = textH(g, m, t) + att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0);
+            const below = textH(g, m, t) + att.blockHeight(m.msg.attachments, g.wrap, m.msg.content.len > 0, m.msg.id);
             var eh = emb.block(ctx, dl, m, br.x + 14, ty + below, g.wrap, alpha, .{ .from = sel_from, .to = sel_to, .probe = probe });
             eh += threads.card(ctx, dl, m, br.x + 14, ty + below + eh, g.wrap);
             eh += decoBlock(ctx, dl, g, m, br.x + 14, ty + below + eh);

@@ -95,7 +95,7 @@ zig build -Doptimize=ReleaseFast
 ./zig-out/bin/larpercord --demo
 ```
 
-O resto já está no repositório: Dear ImGui, Lua, stb_image, libdave, MLSpp e nlohmann/json estão copiados em `third_party/`, então o build para Linux não baixa nada.
+O resto já está no repositório: Dear ImGui, Lua, stb_image, dr_mp3, dr_wav, libdave, MLSpp e nlohmann/json estão copiados em `third_party/`, então o build para Linux não baixa nada.
 
 A versão para Windows também é compilada no Linux. O `tools/windows_deps.sh` baixa as bibliotecas dela uma vez, em versões fixas e com hash conferido:
 

@@ -61,6 +61,17 @@ fn addRnnoise(b: *std.Build, m: *std.Build.Module) void {
     }
 }
 
+/// MP3 e WAV do player de áudio (third_party/dr_libs; src/core/audio_pcm.zig). -Os
+/// também no debug do QA: tocar um MP3 custa pouco de qualquer jeito, e assim o
+/// executável fica uns 20 KB menor que com -O2. Sem o sanitizador de UB (o minimp3
+/// conta com aritmética de C que ele marcaria). `extra`: os cabeçalhos do sysroot
+/// no navegador.
+fn addDrLibs(b: *std.Build, m: *std.Build.Module, extra: []const []const u8) void {
+    const base = [_][]const u8{ "-std=gnu99", "-Os", "-fno-sanitize=undefined" };
+    const flags = std.mem.concat(b.allocator, []const u8, &.{ &base, extra }) catch @panic("OOM");
+    m.addCSourceFile(.{ .file = b.path("third_party/dr_libs/dr_libs.c"), .flags = flags });
+}
+
 /// GNU FriBidi (third_party/fribidi): árabe com as letras ligadas e texto da direita para a
 /// esquerda na ordem de desenho (src/ui/bidi.zig). Estático em todos os alvos, sem DLL nova.
 /// Os includes vão só nestes arquivos: o config.h e o common.h dele têm nomes comuns demais.
@@ -282,6 +293,7 @@ pub fn build(b: *std.Build) void {
     addLua(b, mod);
     addRnnoise(b, mod);
     addFribidi(b, mod);
+    addDrLibs(b, mod, &.{});
     if (windows) {
         const ft = win_deps.path(b, "src/freetype");
         mod.addIncludePath(ft.path(b, "include"));
@@ -350,6 +362,7 @@ pub fn build(b: *std.Build) void {
     addLua(b, test_mod);
     addRnnoise(b, test_mod);
     addFribidi(b, test_mod);
+    addDrLibs(b, test_mod, &.{});
     const tests = b.addTest(.{ .root_module = test_mod });
     b.step("test", "Roda os testes").dependOn(&b.addRunArtifact(tests).step);
 
@@ -443,6 +456,7 @@ fn addWeb(b: *std.Build, native_c: *std.Build.Module, themes_mod: *std.Build.Mod
         m.addCSourceFile(.{ .file = b.path("src/platform/web/stubs.c"), .flags = &.{"-std=gnu99"} });
         addLua(b, m);
         addFribidi(b, m);
+        addDrLibs(b, m, &.{});
         for ([_][]const u8{ "sdl3", "freetype2", "zlib" }) |l| m.linkSystemLibrary(l, .{});
         const exe = b.addExecutable(.{ .name = "larpercord-web-sim", .root_module = m });
         const run = b.addRunArtifact(exe);
@@ -507,6 +521,7 @@ fn addWeb(b: *std.Build, native_c: *std.Build.Module, themes_mod: *std.Build.Mod
     // Lua com o setjmp/longjmp do Emscripten (o mesmo que o emcc liga por padrão).
     cm.addCSourceFiles(.{ .root = b.path("third_party/lua"), .files = &lua_sources, .flags = &.{ "-std=gnu99", "-O2", "-fno-sanitize=undefined", "-mllvm", "-enable-emscripten-sjlj", c_inc } });
     addWebC(b, cm, c_inc);
+    addDrLibs(b, cm, &.{c_inc});
     const clib = b.addLibrary(.{ .name = "larpercord-web-c", .linkage = .static, .root_module = cm });
     clib.bundle_compiler_rt = false;
 

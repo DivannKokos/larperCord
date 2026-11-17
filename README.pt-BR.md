@@ -150,8 +150,11 @@ O cliente oficial é um navegador inteiro disfarçado de app. No mesmo PC:
   FFmpeg a página diz o porquê (um `ffmpeg` estático no PATH, sem as bibliotecas, uma versão que o app
   não usa, uma biblioteca que não carregou). Também anima os GIFs antigos do Tenor que só existem em MP4.
 - **Mídia**: spoilers e mídias sensíveis ficam cobertos até você clicar, sem baixar nada antes; links de
-  imagem do Discord vencidos são renovados sozinhos; mensagens de voz têm um player com a onda; GIFs
-  longos tocam todos os quadros, e uma estrela em qualquer GIF põe nos seus favoritos.
+  imagem do Discord vencidos são renovados sozinhos; mensagens de voz têm um player com a onda;
+  arquivos de áudio (.mp3, .ogg, .wav, .flac, .m4a…) tocam na conversa, com a onda do arquivo inteiro
+  como barra, velocidade 1×/1,5×/2× e barrinhas que dançam enquanto toca (Opus, MP3 e WAV sem instalar
+  nada, o resto pelo FFmpeg); GIFs longos tocam todos os quadros, e uma estrela em qualquer GIF põe nos
+  seus favoritos.
 - **Proxy** (HTTP, HTTPS, SOCKS5, SOCKS5h; Tor em `socks5h://127.0.0.1:9050`), com campos separados para
   endereço, porta, login e senha, para a mídia de fora do Discord ou para tudo menos as calls de voz, que
   sempre conectam direto (Configurações → Rede). A tela de entrada também tem ("Conectar por um
@@ -357,7 +360,8 @@ src/
   ui/         componentes, texto rico, paleta, configurações, animações
   platform/   janela, renderizador, "acordar" o laço; o único lugar que conhece o SDL
 themes/       os temas embutidos (também compilados dentro do binário)
-third_party/  Dear ImGui 1.93 + dear_bindings (C), com um patch pequeno para emoji em bitmap; GNU FriBidi
+third_party/  Dear ImGui 1.93 + dear_bindings (C), com um patch pequeno para emoji em bitmap; GNU FriBidi;
+              dr_mp3 + dr_wav (anexos de áudio)
 ```
 
 O fluxo é **interface → `Action` → app → `Command` → gateway → `Event` → Store → interface**.
@@ -394,5 +398,5 @@ gateway falso pelo real não toca na interface.
 
 ## Licença
 
-O larperCord usa a [GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`). O código de terceiros mantém a própria licença, em cada pasta de `third_party/`: Dear ImGui e dear_bindings são MIT, RNNoise é BSD, GNU FriBidi é LGPL-2.1 ou posterior. O arquivo
+O larperCord usa a [GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`). O código de terceiros mantém a própria licença, em cada pasta de `third_party/`: Dear ImGui e dear_bindings são MIT, RNNoise é BSD, GNU FriBidi é LGPL-2.1 ou posterior, dr_mp3 e dr_wav (dr_libs) são domínio público ou MIT No Attribution. O arquivo
 `third_party/imgui/misc/freetype/imgui_freetype.cpp` tem alterações marcadas com `[larperCord]`.
