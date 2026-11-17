@@ -80,14 +80,16 @@ pub fn draw(ctx: *d.Ctx) void {
     const y = ctx.win.y + 14 + (if (toast_on) @as(f32, 42) else 0) + (if (conn_down) @as(f32, 46) else 0);
     const box: d.Rect = .{ .x = ctx.win.x + (ctx.win.w - w) / 2, .y = y, .w = w, .h = h };
 
-    c.ImGui_SetNextWindowPos(d.v(box.x - 16, box.y - 16), 0);
-    c.ImGui_SetNextWindowSize(d.v(box.w + 32, box.h + 32), 0);
+    // A janela é só do tamanho da faixa (o clique em volta continua indo para o que
+    // está embaixo); o desenho vai na camada de cima, com a sombra fora dela.
+    c.ImGui_SetNextWindowPos(d.v(box.x, box.y), 0);
+    c.ImGui_SetNextWindowSize(d.v(box.w, box.h), 0);
     _ = c.ImGui_Begin("##aviso-atualizacao", null, c.ImGuiWindowFlags_NoDecoration | c.ImGuiWindowFlags_NoBackground |
         c.ImGuiWindowFlags_NoSavedSettings | c.ImGuiWindowFlags_NoMove | c.ImGuiWindowFlags_NoScrollWithMouse | c.ImGuiWindowFlags_NoNav |
         c.ImGuiWindowFlags_NoFocusOnAppearing);
     defer c.ImGui_End();
     d.windowToFront();
-    const dl = c.ImGui_GetWindowDrawList();
+    const dl = ctx.fg;
     const k = anim.to(anim.id("aviso-atualizacao", 0), 1, 16);
     const r: d.Rect = .{ .x = box.x, .y = box.y - (1 - k) * 10, .w = box.w, .h = box.h };
     qa.markTop(r, "update-banner:{t}", .{f});
