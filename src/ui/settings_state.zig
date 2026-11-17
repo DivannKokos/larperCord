@@ -143,6 +143,9 @@ pub const Settings = struct {
     data_saver: bool = false,
     /// Prévia do markdown acima da caixa de texto, quando tem formatação.
     md_preview: bool = true,
+    /// O botão do microfone na caixa de texto (e o atalho dele): grava um áudio e
+    /// manda como um anexo .ogg comum (ui/gravar_audio.zig).
+    record_audio: bool = true,
     /// Canal com não lidas abre na primeira delas, como no Discord (senão, no fim).
     open_at_unread: bool = true,
     /// Pasta com as bibliotecas do FFmpeg escolhida à mão (vazia = procurar sozinho;

@@ -4193,6 +4193,8 @@ pub const Gateway = struct {
                         const fp = c.curl_mime_addpart(mp);
                         _ = c.curl_mime_name(fp, field.ptr);
                         _ = c.curl_mime_filedata(fp, f.ptr);
+                        // O tipo que o navegador mandaria onde o curl não sabe (.ogg: audio/ogg).
+                        if (envio_json.partType(names[i])) |t| _ = c.curl_mime_type(fp, t.ptr);
                         // Spoiler: o nome do arquivo na parte também leva o SPOILER_.
                         if (i < m.file_opts.len and m.file_opts[i].spoiler) {
                             var sb: [300]u8 = undefined;

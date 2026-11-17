@@ -606,6 +606,9 @@ pub const Action = union(enum) {
     remove_upload: usize,
     /// Ctrl+V com uma imagem na área de transferência.
     paste_image,
+    /// O áudio gravado na caixa (ui/gravar_audio.zig), já salvo no arquivo
+    /// temporário (caminho no c_allocator): vai como um anexo comum.
+    send_recording: [:0]u8,
     /// Tela de amigos (no lugar da conversa, dentro das mensagens diretas).
     open_friends,
     /// Chegou perto do topo da conversa: busca as mais antigas.

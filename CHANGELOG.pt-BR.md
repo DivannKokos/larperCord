@@ -5,6 +5,9 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Mensagens**
+- Gravar áudio na caixa de mensagem: o botão do microfone ao lado das opções (ou Ctrl+Shift+R, que dá para trocar em Configurações → Atalhos de teclado) grava pelo microfone escolhido em Configurações → Voz, com o volume e a supressão de ruído de lá. Enquanto grava, uma barra fica no lugar da caixa com o tempo e o nível ao vivo; Enviar (Enter) manda e Cancelar (Esc) joga fora. Vai como um arquivo .ogg comum (Opus, mono, 32 kbit/s, uns 240 KB por minuto), pelo mesmo caminho de qualquer arquivo anexado e respondendo se a caixa está respondendo, e o texto que você estava escrevendo continua na caixa. Até 10 minutos, com aviso nos últimos 30 segundos. Não grava durante uma call nem onde você não pode anexar arquivos (o botão diz o motivo), e Configurações → Chat → Botão de gravar áudio esconde ele.
+
 ## 0.6.6
 
 **Aparência**

@@ -22,6 +22,7 @@ const att = @import("attachments.zig");
 const emb = @import("embeds.zig");
 const search = @import("search.zig");
 const md_preview = @import("md_preview.zig");
+const gravar = @import("gravar_audio.zig");
 const lsp_ui = @import("lsp_ui.zig");
 const vim = @import("vim.zig");
 const ime = @import("ime.zig");
@@ -1716,6 +1717,8 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
     // Só a caixa do chat recebe a conversão do IME. Quem desenha outra caixa
     // neste quadro (ou o painel de configurações) deixa esta desligada.
     ime.beginComposer();
+    // A gravação de áudio acaba sozinha se a conversa mudou (ui/gravar_audio.zig).
+    gravar.watch(ctx);
     if (ctx.st.friends) return;
     // Na tela da call, os botões da faixa de voz no lugar da caixa.
     if (call_grid.guildCall(ctx) != null) {
@@ -1740,6 +1743,11 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
         vim.composer_active = false;
         if (limit.reason.blocksInput()) return send_limits.band(ctx, n, r_in, limit);
         return forum.composerBand(ctx, n, r_in, cs);
+    }
+    // Gravando: a barra da gravação tem uma linha só.
+    if (gravar.recordingIn(ch_id) and composer_extra != 0) {
+        composer_extra = 0;
+        anim.active = true;
     }
     const grown = composer_extra;
     const r: d.Rect = .{ .x = r_in.x, .y = r_in.y - grown, .w = r_in.w, .h = r_in.h + grown };
@@ -1811,6 +1819,14 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
     // Modo lento: na mesma linha, à direita.
     send_limits.slowmodeLabel(ctx, fam, limit, r.right() - (if (pill) @as(f32, 24) else 6), top - 19);
 
+    // Gravando áudio: a barra da gravação no lugar da caixa e dos botões. O texto
+    // escrito fica guardado e volta quando ela acaba.
+    if (gravar.recordingIn(ch_id)) {
+        vim.composer_active = false;
+        autocomplete.update(ctx, ch_id, false, .{ .x = r.x, .y = top - tray_h, .w = r.w, .h = 0 });
+        return gravar.bar(ctx, dl, fam, r, prompt, pill, st.reply_to != 0 or st.editing != 0);
+    }
+
     var input_x: f32 = r.x + 48;
     var input_r = r.right() - 96;
     if (prompt) {
@@ -1826,6 +1842,12 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
         input_r = r.right() - 84 - gw - ow;
         const gr: d.Rect = .{ .x = r.right() - 72 - gw, .y = r.y + r.h / 2 - 13, .w = gw, .h = 26 };
         compose_opts.button(ctx, dl, fam, .{ .x = gr.x - ow - 4, .y = gr.y, .w = ow, .h = 26 }, true);
+        // Gravar áudio (Configurações → Chat).
+        if (gravar.showsButton(ctx)) {
+            const rw = d.width(fam.get(.bold), fs, "[rec]") + 8;
+            input_r -= rw + 4;
+            gravar.button(ctx, dl, fam, .{ .x = gr.x - ow - 8 - rw, .y = gr.y, .w = rw, .h = 26 }, true, &cs.info);
+        }
         const gh = d.hit(ctx, 40, gr);
         qa.mark(gr, "composer-gif", .{});
         d.text(dl, fam.get(.bold), fs, gr.x + 4, d.centerY(gr, fs), if (gh.hovered) ctx.col(.accent) else ctx.col(.muted), "[gif]");
@@ -1866,6 +1888,13 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
         // Opções da próxima mensagem (silenciosa, sem prévias, sem menções).
         const opt_r: d.Rect = .{ .x = gr.x - 34, .y = r.y + r.h / 2 - 13, .w = 28, .h = 26 };
         compose_opts.button(ctx, dl, fam, opt_r, false);
+        // Gravar áudio, à esquerda das opções (Configurações → Chat).
+        var left_edge = opt_r.x;
+        if (gravar.showsButton(ctx)) {
+            const mr: d.Rect = .{ .x = opt_r.x - 32, .y = r.y + r.h / 2 - 14, .w = 28, .h = 28 };
+            gravar.button(ctx, dl, fam, mr, false, &cs.info);
+            left_edge = mr.x;
+        }
         const er: d.Rect = .{ .x = ex, .y = r.y + r.h / 2 - 14, .w = 28, .h = 28 };
         const eh = d.hit(ctx, 2, er);
         qa.mark(er, "composer-emoji", .{});
@@ -1885,7 +1914,7 @@ pub fn composer(ctx: *d.Ctx, n: *const kdl.Node, r_in: d.Rect) void {
             if (sh.clicked) submit(ctx);
             d.tip(ctx, sr, i18n.tr("Enviar  (Enter)", "Send  (Enter)"), sh.hovered);
         }
-        input_r = opt_r.x - 4;
+        input_r = left_edge - 4;
     }
     // O lugar do mascote do canto, à esquerda dos botões: ele mora ali dentro e não
     // cobre nada da conversa nem da caixa.

@@ -5,6 +5,9 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Messages**
+- Record audio from the message box: the microphone button next to the options (or Ctrl+Shift+R, changeable in Settings → Keybinds) records with the microphone chosen in Settings → Voice, with its volume and noise suppression. While it records, a bar takes the place of the box with the time and the live level; Send (Enter) sends it and Cancel (Esc) throws it away. It goes as a regular .ogg file (Opus, mono, 32 kbit/s, about 240 KB per minute), the same way as any attached file and replying if the box is replying, and the text you were typing stays in the box. Up to 10 minutes, with a warning in the last 30 seconds. It doesn't record during a call or where you can't attach files (the button says why), and Settings → Chat → Record audio button hides it.
+
 ## 0.6.6
 
 **Appearance**
