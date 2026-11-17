@@ -13,8 +13,9 @@ const anim = @import("anim.zig");
 const icons = @import("icons.zig");
 const log = @import("../core/changelog.zig");
 
-const changelog_en = @embedFile("changelog_en");
-const changelog_pt = @embedFile("changelog_pt");
+/// Comprimidos: abrem na primeira vez que a página aparece (core/embutido.zig).
+const changelog_en = @embedFile("changelog_en_z");
+const changelog_pt = @embedFile("changelog_pt_z");
 
 pub fn draw(p: anytype) void {
     const ctx = p.ctx;
@@ -86,8 +87,10 @@ fn versions() ?[]const Version {
     return slot.*;
 }
 
-fn load(text: []const u8) ![]const Version {
+fn load(packed_text: []const u8) ![]const Version {
     const gpa = std.heap.c_allocator;
+    // Os itens apontam para dentro do texto: ele fica aberto.
+    const text = try @import("../core/embutido.zig").inflate(gpa, packed_text);
     const list = try log.parse(gpa, text);
     const out = try gpa.alloc(Version, list.len);
     for (list, out) |v, *o| {

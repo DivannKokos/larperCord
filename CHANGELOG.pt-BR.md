@@ -1,5 +1,10 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Mais leve**
+- O arquivo do app ficou uns 360 KB menor: as traduções em japonês e russo, o changelog e a tabela de emoji vão dentro dele comprimidos e só abrem quando precisa (ao escolher o idioma, abrir Atualizações ou aparecer o primeiro emoji). O último emoji da tabela, a bandeira do País de Gales, não lê mais um byte além do fim dela.
+
 ## 0.6.6
 
 **Aparência**

@@ -1,5 +1,10 @@
 # What changed in each version
 
+## 0.6.7
+
+**Lighter**
+- The app file is about 360 KB smaller: the Japanese and Russian translations, the changelog and the emoji table go inside it compressed and only open when needed (when you pick the language, open Updates, or the first emoji shows up). The last emoji of the table, the Wales flag, no longer reads one byte past its end.
+
 ## 0.6.6
 
 **Appearance**
