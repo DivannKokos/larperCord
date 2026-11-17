@@ -19,6 +19,9 @@
 **Mais leve**
 - O arquivo do app ficou uns 360 KB menor: as traduções em japonês e russo, o changelog e a tabela de emoji vão dentro dele comprimidos e só abrem quando precisa (ao escolher o idioma, abrir Atualizações ou aparecer o primeiro emoji). O último emoji da tabela, a bandeira do País de Gales, não lê mais um byte além do fim dela.
 
+**Texto em qualquer idioma**
+- Russo: 341 textos que tinham sido traduzidos por máquina (entre a 0.6.2 e a 0.6.6) voltaram para o inglês, como espaço reservado para alguém traduzir; outros 63 estão sendo reescritos no pull request do DivannKokos (#29). Tudo o que pIat0n e DivannKokos traduziram fica. `tools/i18n_strings.py --lang ru --check` diz quantos faltam, e o começo do i18n/ru.kdl explica como mandar uma tradução.
+
 ## 0.6.6
 
 **Aparência**

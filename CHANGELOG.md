@@ -19,6 +19,9 @@
 **Lighter**
 - The app file is about 360 KB smaller: the Japanese and Russian translations, the changelog and the emoji table go inside it compressed and only open when needed (when you pick the language, open Updates, or the first emoji shows up). The last emoji of the table, the Wales flag, no longer reads one byte past its end.
 
+**Text in any language**
+- Russian: 341 texts that had been machine-translated (added from 0.6.2 to 0.6.6) are back in English, as placeholders waiting for a person to translate them; 63 more are being rewritten in DivannKokos's pull request (#29). Everything translated by pIat0n and DivannKokos stays. `tools/i18n_strings.py --lang ru --check` says how many are left, and the top of i18n/ru.kdl explains how to send a translation.
+
 ## 0.6.6
 
 **Appearance**
