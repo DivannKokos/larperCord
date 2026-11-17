@@ -109,6 +109,12 @@ pub const Settings = struct {
     mascot_cursor: bool = true,
     /// Espera você com a janela sem foco, acampa quando você some e comemora a volta.
     mascot_away: bool = true,
+    /// Reage ao que você digita (ui/mascote_reacoes.zig): tudo em maiúsculas, spoiler,
+    /// bloco de código, mensagem longa, "@", "#" e "/", apagar muito e os segredos.
+    mascot_typing: bool = true,
+    /// Brincadeiras: o d20 do envio, o emoji, o link e a imagem soltos em cima dele, o
+    /// esconde-esconde e as teclas Ctrl+K, Ctrl+S, Ctrl+P, Ctrl+X, Ctrl+V e Esc.
+    mascot_games: bool = true,
     /// A plantinha do lado dele, os dias em que ela cresceu e o último dia de uso
     /// (dias desde 1970, no fuso daqui).
     mascot_plant: bool = true,
