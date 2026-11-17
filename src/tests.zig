@@ -31,6 +31,7 @@ test {
     _ = @import("core/links.zig");
     _ = @import("core/voz.zig");
     _ = @import("core/sons.zig");
+    _ = @import("core/aviso.zig");
     _ = @import("core/som_arquivo.zig");
     _ = @import("core/janela.zig");
     _ = @import("core/bandeja.zig");

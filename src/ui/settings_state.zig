@@ -190,6 +190,9 @@ pub const Settings = struct {
     // Notificações (DMs e menções)
     desktop_notifs: bool = true,
     taskbar_flash: bool = true,
+    /// O som de mensagem nova (core/aviso.zig decide quando; o som em si é o
+    /// `sound_message` abaixo, com os da call).
+    message_sound: bool = true,
 
     // Voz (net/voz_audio.zig, core/voz.zig)
     /// Nome do microfone e da saída; vazio = padrão do sistema. Se o dispositivo
@@ -246,6 +249,9 @@ pub const Settings = struct {
     sound_ring: u8 = 1,
     sound_ring_vol: u8 = 100,
     sound_ring_file: Text = .{},
+    sound_message: u8 = 1,
+    sound_message_vol: u8 = 100,
+    sound_message_file: Text = .{},
 
     /// Volume dos vídeos em % (0..100; 0 = mudo).
     video_volume: u8 = 100,
@@ -657,6 +663,10 @@ test "sons por evento vão e voltam, e o arquivo antigo toca o de antes" {
     soundFile(&s, .ring).set("ring-meu \"toque\".ogg");
     soundVariant(&s, .user_leave).* = @backingInt(sons.Variant.retro);
     soundVolume(&s, .mute).* = 200;
+    // O de mensagem nova mora com os outros; a chave dele, nas notificações.
+    soundVariant(&s, .message).* = @backingInt(sons.Variant.soft);
+    soundVolume(&s, .message).* = 60;
+    s.message_sound = false;
     var out: std.ArrayList(u8) = .empty;
     defer out.deinit(std.testing.allocator);
     try write(&s, "vidro", &out, std.testing.allocator);
@@ -665,6 +675,9 @@ test "sons por evento vão e voltam, e o arquivo antigo toca o de antes" {
     const nodes = try kdl.parse(arena.allocator(), out.items, null);
     var back: Settings = .{};
     apply(&back, &nodes[0]);
+    try std.testing.expectEqual(@as(u8, 2), back.sound_message);
+    try std.testing.expectEqual(@as(u8, 60), back.sound_message_vol);
+    try std.testing.expect(!back.message_sound);
     try std.testing.expectEqual(@as(u8, 3), back.sound_join);
     try std.testing.expectEqual(@as(u8, 35), back.sound_join_vol);
     try std.testing.expectEqual(@as(u8, 5), back.sound_ring);
@@ -678,6 +691,9 @@ test "sons por evento vão e voltam, e o arquivo antigo toca o de antes" {
     apply(&older, &old[0]);
     try std.testing.expectEqual(@as(u8, 1), older.sound_join);
     try std.testing.expectEqual(@as(u8, 0), older.sound_user_join);
+    // Quem atualiza ganha o som de mensagem nova ligado, no clássico.
+    try std.testing.expect(older.message_sound);
+    try std.testing.expectEqual(@as(u8, 1), older.sound_message);
     resetSounds(&back);
     try std.testing.expectEqual(@as(u8, 1), back.sound_join);
     try std.testing.expectEqual(@as(usize, 0), back.sound_ring_file.len);

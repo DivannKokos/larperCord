@@ -386,6 +386,10 @@ pub const Command = union(enum) {
     /// Só a demonstração: alguém liga para nós nesta conversa (`ring`) ou
     /// desliga a call (o QA usa; o gateway de verdade ignora).
     demo_call: struct { channel: Id, ring: bool },
+    /// Só a demonstração: alguém manda agora nesta conversa uma mensagem como as
+    /// que chegam ao vivo (`mention`: marcando a gente). O QA usa (o som de
+    /// mensagem nova); o gateway de verdade ignora.
+    demo_message: struct { channel: Id, mention: bool = false },
     /// Pede a lista de membros de um servidor, vista do canal aberto (op 14).
     /// `channel` é sempre um canal de verdade (o pai, se for thread); `thread`
     /// pede também a lista de quem está nela.

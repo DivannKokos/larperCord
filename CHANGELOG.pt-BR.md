@@ -1,5 +1,10 @@
 # O que mudou em cada versão
 
+## 0.6.7
+
+**Notificações**
+- Som de mensagem nova, como no Discord: um aviso curto com mensagem direta, grupo e menção (@everyone, @here e os seus cargos também, seguindo as notificações do servidor), ligado de começo em Configurações → Notificações → Som de mensagem nova. Toca com a janela fora de foco ou escondida na bandeja, e em outra conversa; não na conversa que você está olhando, nas suas próprias mensagens, em canais e servidores silenciados, nem em Não perturbe. Uma rajada de mensagens toca uma vez a cada 1,5 segundo. O som pode ser desligado, trocado por outro embutido ou por um arquivo seu, com volume próprio, ali mesmo ou em Configurações → Voz → Sons, e sai na mesma saída dos sons da call. A demonstração recebe uma DM de um amigo de vez em quando. Os textos novos ficam em inglês no russo até alguém traduzir.
+
 ## 0.6.6
 
 **Aparência**

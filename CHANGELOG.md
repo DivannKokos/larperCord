@@ -1,5 +1,10 @@
 # What changed in each version
 
+## 0.6.7
+
+**Notifications**
+- A new message sound, like Discord's: a short cue for direct messages, groups and mentions (@everyone, @here and your roles included, following the server's notification settings), on by default in Settings → Notifications → New message sound. It plays with the window unfocused or hidden in the tray, and in another conversation; not for the conversation you're looking at, your own messages, muted channels and servers, or in Do Not Disturb. A burst of messages plays it once every 1.5 seconds. The sound can be turned off, swapped for another built-in one or for a file of yours, with its own volume, right there or in Settings → Voice → Sounds, and it goes out on the same output as the call sounds. The demo gets a DM from a friend now and then. The new texts are in English in Russian until someone translates them.
+
 ## 0.6.6
 
 **Appearance**

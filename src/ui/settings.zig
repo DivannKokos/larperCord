@@ -1029,6 +1029,9 @@ fn page(p: *Page, previews: []const Preview) void {
             p.note(i18n.tr("Para mensagens diretas e menções, quando você não está olhando a conversa.", "For direct messages and mentions, when you're not looking at the conversation."));
             p.toggle(i18n.tr("Notificações na área de trabalho", "Desktop notifications"), i18n.tr("Só com a janela fora de foco ou escondida na bandeja.", "Only while the window is unfocused or hidden in the tray."), &s.desktop_notifs);
             p.toggle(i18n.tr("Piscar na barra de tarefas", "Flash taskbar"), i18n.tr("A janela chama atenção até você voltar para ela.", "The window asks for attention until you come back."), &s.taskbar_flash);
+            p.toggle(i18n.tr("Som de mensagem nova", "New message sound"), i18n.tr("Um aviso curto com mensagem direta e menção, também com a janela fora de foco ou na bandeja. Não toca na conversa que você está olhando nem em Não perturbe.", "A short cue for direct messages and mentions, also while the window is unfocused or in the tray. Silent for the conversation you're looking at and in Do Not Disturb."), &s.message_sound);
+            // O som em si: o mesmo da página Voz (embutido, arquivo seu, volume e Ouvir).
+            @import("settings_voz.zig").soundRow(p, s, .message);
             p.note(i18n.tr("Canais silenciados (botão direito → Silenciar) não notificam.", "Muted channels (right-click → Mute) never notify."));
         },
         .privacidade => {
