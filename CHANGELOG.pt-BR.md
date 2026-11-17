@@ -33,6 +33,10 @@
 - Mais atalhos que ele percebe, junto com Ctrl+C, Ctrl+Z e Ctrl+F: Ctrl+K pula num portal, Ctrl+S segura um disquete, Ctrl+P imprime a própria pata, Ctrl+X pega uma tesoura, Ctrl+V cospe um clone, e Esc faz ele se enfiar na caixa de mensagem por um instante, mas só quando o Esc não tinha mais nada para fechar (um menu, a paleta, uma resposta, o texto da caixa…) e no máximo uma vez a cada 20 segundos. As teclas continuam fazendo o que sempre fizeram. Elas fazem parte das Brincadeiras. As duas chaves novas vêm ligadas e descansam com a vida própria Desligada ou com Reduzir movimento ligado. O japonês segue os textos novos; as linhas novas do russo ficam em inglês até alguém traduzir.
 - Escreva o nome do mascote (Personalizar → Nome) na caixa de mensagem e ele responde "Me chamou?". As patinhas nos olhos, os óculos e os olhos de emoji seguem o lugar, o espaço, o tamanho e a altura dos olhos escolhidos em Personalizar.
 
+**Atualizações**
+- Versão nova não fica mais escondida num toast de menos de dois segundos: uma faixa no topo diz qual versão saiu e fica até você fechar, com "Atualizar agora", o progresso do download e "Reiniciar agora" quando ela está instalada; fechar vale até o app abrir de novo. O botão das configurações fica com um pontinho enquanto houver o que atualizar, e com o app na bandeja ou sem foco vai também uma notificação do sistema. Instalado por gerenciador de pacotes, o botão explica como atualizar por ele.
+- Configurações → Atualizações → "Atualizar sozinho", desligado de começo: achou versão nova, baixa e instala em segundo plano (com a assinatura conferida como sempre) e ela abre na próxima vez que o app abrir.
+
 ## 0.6.6
 
 **Aparência**

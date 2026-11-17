@@ -172,6 +172,9 @@ pub const Settings = struct {
 
     /// Pergunta ao GitHub se há versão nova ao abrir o app.
     check_updates: bool = true,
+    /// Achou versão nova: baixa e instala sozinho (ela abre na próxima vez). Desligado
+    /// de começo: tem quem prefira escolher a hora.
+    auto_update: bool = false,
 
     // Privacidade (o proxy fica na página Rede)
     send_typing: bool = true,

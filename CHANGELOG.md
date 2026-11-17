@@ -33,6 +33,10 @@
 - More shortcuts it reacts to, next to Ctrl+C, Ctrl+Z and Ctrl+F: Ctrl+K jumps into a portal, Ctrl+S holds a floppy disk, Ctrl+P prints its own paw, Ctrl+X brings out scissors, Ctrl+V spits out a clone, and Esc makes it duck into the message box for a moment, but only when Esc had nothing else to close (a menu, the palette, a reply, the text in the box…) and at most once every 20 seconds. The keys still do what they always did. They're part of Games. Both new switches are on by default and rest while A life of its own is Off or Reduce motion is on. Japanese follows the new texts; the new Russian lines stay in English until someone translates them.
 - Type the mascot's name (Customize → Name) in the message box and it answers "You called?". The paws over its eyes, the glasses and the emoji eyes follow the eye position, spacing, size and height you set in Customize.
 
+**Updates**
+- A new version no longer hides in a toast that lasted under two seconds: a bar at the top says which version came out and stays until you close it, with "Update now", the download progress and "Restart now" when it's installed; closing it lasts until the app opens again. The settings button keeps a dot while there's something to update, and with the app in the tray or unfocused, a desktop notification says so too. Installed by a package manager, the button explains how to update through it.
+- Settings → Updates → "Update automatically", off by default: when a new version is found, it downloads and installs in the background (signature checked as always) and opens the next time the app starts.
+
 ## 0.6.6
 
 **Appearance**

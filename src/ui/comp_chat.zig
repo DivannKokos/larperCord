@@ -101,6 +101,7 @@ pub fn header(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect) void {
             qa.mark(gr, "header-settings", .{});
             if (gh.clicked) ctx.act(.open_settings);
             icons.gear(dl, gr.x + 14, gr.y + 14, (if (gh.hovered) ctx.col(.text) else ctx.col(.muted)).u());
+            @import("aviso_atualizacao.zig").ponto(ctx, dl, gr);
             var kb: [48]u8 = undefined;
             var tb: [160]u8 = undefined;
             d.tip(ctx, gr, i18n.fmt(&tb, "Configurações  ({s})", "User Settings  ({s})", .{teclas.label(&ctx.st.teclas, .configuracoes, &kb)}), gh.hovered);

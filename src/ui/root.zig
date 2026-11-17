@@ -192,6 +192,7 @@ pub fn frame(ctx: *d.Ctx, placed: *std.ArrayList(layout.Placed), previews: []con
     _ = search.releaseIdle(false);
     toast(ctx);
     connectionBanner(ctx);
+    @import("aviso_atualizacao.zig").draw(ctx);
     @import("mascote_pet.zig").draw(ctx);
     // Chamada chegando: por cima de tudo, em qualquer tema.
     @import("chamada.zig").overlay(ctx);
