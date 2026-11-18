@@ -850,10 +850,11 @@ pub const Gateway = struct {
         g.send(out.items);
     }
 
-    fn dropHeldActivity(g: *Gateway) void {
+    /// Tira da espera os comandos do mesmo tipo de `cmd` (só o mais novo vale).
+    fn dropHeld(g: *Gateway, cmd: ev.Command) void {
         var i: usize = 0;
         while (i < g.held.items.len) {
-            if (g.held.items[i] == .set_activity) freeCommand(g.held.orderedRemove(i)) else i += 1;
+            if (std.meta.activeTag(g.held.items[i]) == std.meta.activeTag(cmd)) freeCommand(g.held.orderedRemove(i)) else i += 1;
         }
     }
 
@@ -3037,7 +3038,7 @@ pub const Gateway = struct {
     /// Comando que é escrito no WebSocket (não passa pelo REST).
     fn usesGateway(cmd: ev.Command) bool {
         return switch (cmd) {
-            .subscribe_guild, .channel_info, .set_status, .set_activity, .join_voice, .voice_flags => true,
+            .subscribe_guild, .channel_info, .set_status, .set_activity, .set_game, .join_voice, .voice_flags => true,
             // Os eventos da interação vão para a sessão do READY (session_id).
             .interaction => |ic| ic == .send,
             else => false,
@@ -3530,6 +3531,7 @@ pub const Gateway = struct {
                 if (list.len > 0) alloc.free(list);
             },
             .set_activity => |sa| if (sa.activity) |a| alloc.destroy(a),
+            .set_game => |sg| if (sg) |x| alloc.destroy(x),
             .interaction => |ic| interaction.freeCmd(alloc, ic),
             .create_thread => |m| alloc.free(m.name),
             .edit_thread => |e| if (e.name) |n| alloc.free(n),
@@ -3921,8 +3923,8 @@ pub const Gateway = struct {
         // Grava no fim da volta do laço, junto com as outras estrelas que chegaram.
         if (cmd == .gif_favorite) return g.queueFavorite(cmd.gif_favorite);
         if (!g.ws_ready and usesGateway(cmd)) {
-            // Rich Presence: só a atividade mais nova espera a conexão voltar.
-            if (cmd == .set_activity) g.dropHeldActivity();
+            // Rich Presence e jogo aberto: só o mais novo de cada espera a conexão voltar.
+            if (cmd == .set_activity or cmd == .set_game) g.dropHeld(cmd);
             g.held.append(alloc, cmd) catch freeCommand(cmd);
             return;
         }
@@ -4410,6 +4412,12 @@ pub const Gateway = struct {
                 // personalizado e esta atividade (net/conta_net.zig).
                 conta_net.sendPresence(g);
                 // O Discord não manda a nossa presença de volta: a nossa linha muda aqui.
+                g.emit(g.presence.meEvent(alloc, g.me, g.status));
+            },
+            .set_game => |sg| {
+                // O jogo aberto vai ao lado da atividade do Rich Presence, no mesmo op 3.
+                g.presence.setGame(alloc, sg);
+                conta_net.sendPresence(g);
                 g.emit(g.presence.meEvent(alloc, g.me, g.status));
             },
             .conta => |cc| conta_net.execute(g, cc),

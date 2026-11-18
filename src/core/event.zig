@@ -421,6 +421,10 @@ pub const Command = union(enum) {
     /// Rich Presence: a atividade de um jogo (`app` = client_id). Alocada com o
     /// c_allocator, passa para quem recebe; null limpa.
     set_activity: struct { app: Id, activity: ?*@import("../net/rpc_proto.zig").Activity },
+    /// O jogo aberto, achado pelo processo (core/jogos.zig): vai junto com a
+    /// atividade do Rich Presence. Alocado com o c_allocator, passa para quem
+    /// recebe; null limpa.
+    set_game: ?*@import("../net/rpc_proto.zig").Game,
     /// Move alguém para outro canal de voz (null = desconecta da call).
     move_member: struct { guild: Id, user: Id, channel: ?Id },
     /// Expulsar, banir, castigar, silenciar… (chega como `moderated`).
@@ -542,6 +546,8 @@ pub const Action = union(enum) {
     pick_sound,
     /// Abre o seletor de pasta para o FFmpeg (ui/settings_video.zig).
     pick_ffmpeg_dir,
+    /// Abre o seletor para o executável de um jogo (ui/settings_jogos.zig).
+    pick_game_exe,
     restart,
     /// "Apagar todos os dados", confirmado (ui/settings.zig): apaga e fecha o app.
     wipe_data,

@@ -33,6 +33,7 @@ const widgets = @import("ui/widgets.zig");
 const settings_state = @import("ui/settings_state.zig");
 const settings_voz = @import("ui/settings_voz.zig");
 const settings_video = @import("ui/settings_video.zig");
+const settings_jogos = @import("ui/settings_jogos.zig");
 const ffmpeg = @import("platform/ffmpeg.zig");
 const proxy = @import("net/proxy.zig");
 const kdl = @import("theme/kdl.zig");
@@ -825,6 +826,24 @@ pub const App = struct {
         pickedCb(data, list, filter);
     }
 
+    /// O executável de um jogo para o "Jogando …" (ui/settings_jogos.zig). No Linux
+    /// o jogo pode ser um binário sem extensão: sem filtro. Cancelar avisa, para o
+    /// próximo arquivo anexado não virar jogo.
+    fn pickGameExe(app: *App) void {
+        if (app.opts.qa) return;
+        if (sys.windows) {
+            c.SDL_ShowOpenFileDialog(pickedGameCb, app, app.win.window, &exe_filters, exe_filters.len, null, false);
+        } else c.SDL_ShowOpenFileDialog(pickedGameCb, app, app.win.window, null, 0, null, false);
+    }
+
+    /// Fora da pilha: o seletor do Windows lê os filtros na thread dele, depois daqui.
+    const exe_filters = [_]c.SDL_DialogFileFilter{.{ .name = "Programas (.exe)", .pattern = "exe" }};
+
+    fn pickedGameCb(data: ?*anyopaque, list: [*c]const [*c]const u8, filter: c_int) callconv(.c) void {
+        if (list == null or list[0] == null) settings_jogos.cancelPick();
+        pickedCb(data, list, filter);
+    }
+
     /// Só uma imagem, para o ícone ou o banner (ui/edit_place.zig).
     fn pickImage(app: *App) void {
         if (app.opts.qa) return;
@@ -1213,6 +1232,8 @@ pub const App = struct {
                 // `voice-volume "1234" 0.8` e `voice-mute "1234"` (core/volumes.zig).
             } else if (app.st.filtros.applyNode(app.gpa, n, now())) {
                 // Palavras de alerta, filtro, ignorados e foco (core/filtros.zig).
+            } else if (app.st.jogos.applyNode(n)) {
+                // `game "Dota 2" exe="dota2" …`: o "Jogando …" pelo processo (core/jogos.zig).
             } else if (std.mem.eql(u8, n.name, "guild-color")) {
                 guild_color.load(&guild_color.colors, std.heap.c_allocator, n);
             } else if (std.mem.eql(u8, n.name, "theme-colors")) {
@@ -1286,6 +1307,8 @@ pub const App = struct {
         app.st.teclas.write(&out, app.gpa) catch return;
         app.st.filtros.save = false;
         app.st.filtros.write(&out, app.gpa) catch return;
+        app.st.jogos.save = false;
+        app.st.jogos.write(&out, app.gpa) catch return;
         var it = app.themes.choices.iterator();
         while (it.next()) |e| {
             out.print(app.gpa, "theme-options \"{s}\"", .{e.key_ptr.*}) catch return;
@@ -2049,6 +2072,7 @@ pub const App = struct {
             .pick_image => app.pickImage(),
             .pick_sound => app.pickSound(),
             .pick_ffmpeg_dir => app.pickFolder(),
+            .pick_game_exe => app.pickGameExe(),
             .restart => if (app.opts.qa) st.showToast(now(), false, "reiniciando", "restarting", .{}) else {
                 app.restart_wanted = true;
             },
@@ -3239,6 +3263,12 @@ pub const App = struct {
                             app.mascotReloaded();
                             pending = @max(pending, 2);
                         },
+                        // O jogo aberto: olhar os processos não pede quadro (se o jogo
+                        // mudou, a nossa linha nova chega pelo gateway e desenha).
+                        .jogo => {
+                            app_presenca.gameWake(app);
+                            tick_seen = true;
+                        },
                     }
                 } else if (app_flutuante.owns(app, &e)) {
                     // Da janela flutuante: vai para o contexto dela (nunca fecha o app nem
@@ -3336,6 +3366,7 @@ pub const App = struct {
                 defer picked.deinit(std.heap.c_allocator);
                 settings_voz.pollCancel();
                 settings_video.pollCancel();
+                settings_jogos.pollCancel();
                 app.picked.drain(&picked);
                 for (picked.items) |p| {
                     defer std.heap.c_allocator.free(p);
@@ -3347,6 +3378,8 @@ pub const App = struct {
                         app.saveSettings();
                         continue;
                     }
+                    // (Grava pelo `jogos.save`, no fim do quadro.)
+                    if (settings_jogos.takePicked(&app.st, now(), p)) continue;
                     if (@import("ui/edit_place.zig").takePicked(&app.st, now(), p)) continue;
                     if (interact.takePicked(&app.st, now(), p)) continue;
                     if (app.store.ready) app.attachFile(p);
@@ -3496,8 +3529,9 @@ pub const App = struct {
             app.images.data_saver = set.data_saver;
             // Modo foco venceu: o que chegou nos outros canais volta como não lido.
             if (app.st.filtros.focus_until != 0 and !app.st.filtros.focusOn(now_ms)) app.st.filtros.endFocus(&app.store);
-            if (app.st.filtros.save) {
+            if (app.st.filtros.save or app.st.jogos.save) {
                 app.st.filtros.save = false;
+                app.st.jogos.save = false;
                 app.saveSettings();
             }
             // (Aberta pelo retrato em disco, a tela já está em uso: o rascunho de cada
@@ -3868,8 +3902,9 @@ pub const App = struct {
         widgets.hour12 = !set.clock_24h;
         app.images.data_saver = set.data_saver;
         if (app.st.filtros.focus_until != 0 and !app.st.filtros.focusOn(now_ms)) app.st.filtros.endFocus(&app.store);
-        if (app.st.filtros.save) {
+        if (app.st.filtros.save or app.st.jogos.save) {
             app.st.filtros.save = false;
+            app.st.jogos.save = false;
             app.saveSettings();
         }
         const usable = app.store.ready or app.store.from_cache;

@@ -26,6 +26,8 @@ test {
     _ = @import("core/store.zig");
     _ = @import("core/moderacao.zig");
     _ = @import("core/filtros.zig");
+    _ = @import("core/jogos.zig");
+    _ = @import("platform/processos.zig");
     _ = @import("core/volumes.zig");
     _ = @import("core/leitura.zig");
     _ = @import("core/links.zig");
