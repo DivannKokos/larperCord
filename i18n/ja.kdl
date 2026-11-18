@@ -875,7 +875,6 @@
 "Instruction and memory limits per plugin: whoever goes over is stopped, and the error shows up here." "プラグインごとに命令数とメモリの上限があります。超えたプラグインは停止し、エラーがここに表示されます。"
 "Interface at normal size" "インターフェースを標準の大きさに戻す"
 "interface at {d:.0}%" "インターフェース {d:.0}%"
-"Interface font" "インターフェースのフォント"
 "Interface size" "インターフェースの大きさ"
 "Internet" "インターネット"
 "Invalid address: just the proxy's name or IP, or paste the full URL (scheme://host:port, with http, https, socks5 or socks5h)." "無効なアドレスです。プロキシの名前かIPのみを入力するか、完全なURL（scheme://host:port、http、https、socks5、socks5h）を貼り付けてください。"
