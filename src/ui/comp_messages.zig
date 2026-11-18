@@ -517,8 +517,10 @@ pub fn historyIn(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect, ch_id: Id, region: 
             if (m.msg.id != st.jump) continue;
             sc.target = std.math.clamp(st.offsets.items[i] - r.h / 3, 0, max_scroll);
             sc.stick_bottom = false;
-            // Longe: vai direto, sem passar (e baixar) tudo o que tem no caminho.
-            if (sc.pos >= 0 and @abs(sc.pos - sc.target) > r.h * 3) sc.pos = sc.target;
+            // Longe: vai direto, sem passar (e baixar) tudo o que tem no caminho. Conversa
+            // na memória que ainda não apareceu (um resultado da busca local): também, senão
+            // o começo pelo fim, logo abaixo, desfaz o pulo.
+            if (sc.pos < 0 or @abs(sc.pos - sc.target) > r.h * 3) sc.pos = sc.target;
             flash_id = st.jump;
             flash_until = ctx.now_ms + 1600;
             break true;

@@ -68,6 +68,7 @@ test {
     _ = @import("core/salvar.zig");
     _ = @import("platform/pastas.zig");
     _ = @import("core/search_query.zig");
+    _ = @import("core/busca_indice.zig");
     _ = @import("core/accounts.zig");
     _ = @import("core/limites.zig");
     _ = @import("core/debounce.zig");

@@ -1575,6 +1575,7 @@ const ops_editor = [_]Op{
 
 const msg_cache = @import("net/msg_cache.zig");
 const search = @import("ui/search.zig");
+const busca_local = @import("net/busca_local.zig");
 const acc_store = @import("net/accounts_store.zig");
 
 var restored_before: u32 = 0;
@@ -1643,22 +1644,29 @@ fn privateWrite(_: *App) bool {
     if (c.stat("qa-out/privado/larpercord", &st) != 0 or st.st_mode & 0o777 != 0o700) return false;
     return c.stat(p ++ ".tmp", &st) != 0;
 }
+/// Leituras do disco pela busca (o arquivo do índice e os do cache).
 var disk_reads_before: u32 = 0;
 fn searchMarkReads(_: *App) void {
-    disk_reads_before = search.disk_reads;
+    disk_reads_before = busca_local.loads + busca_local.cache_files_read;
 }
-fn searchNoReread(_: *App) bool {
-    return !search.scanning and search.found_disk > 0 and search.disk_reads == disk_reads_before;
+fn searchNoReread(app: *App) bool {
+    return !search.scanning and awayResult(app) != null and busca_local.loads + busca_local.cache_files_read == disk_reads_before;
 }
 fn searchOpen(_: *App) bool {
     return search.open and qa.find("search-input") != null;
 }
-fn searchClosedLongAgo(_: *App) void {
+var docs_before_release: usize = 0;
+fn searchHiddenRelease(_: *App) void {
     search.close();
-    search.qaClosedAgo(6 * 60 * 1000);
+    docs_before_release = busca_local.stats().docs;
+    _ = search.releaseIdle(true);
 }
+/// Saiu da memória, gravado antes no disco (volta quando a busca abrir). O que chega
+/// depois fica num índice pequeno, só desta sessão.
 fn searchIndexFreed(_: *App) bool {
-    return search.diskBytes() == 0;
+    const st = busca_local.stats();
+    return busca_local.isReleased() and st.docs < docs_before_release and st.disk > 0 and
+        @import("platform/sys.zig").fileSize("qa-out/cache/demo/" ++ msg_cache.search_index_file) == st.disk;
 }
 fn searchClosed(_: *App) bool {
     return !search.open;
@@ -1694,11 +1702,20 @@ fn unloadMemes(app: *App) void {
     while (it.next()) |cs| if (cs.*.info.id != open_ch and std.mem.eql(u8, cs.*.info.name, "memes") and cs.*.history == .loaded) app.store.unload(cs.*);
 }
 var search_target: struct { ch: Id = 0, id: Id = 0 } = .{};
-fn searchFromDisk(_: *App) bool {
-    if (search.found_disk == 0 or search.results.items.len == 0) return false;
-    const r = search.results.items[0];
+/// Um resultado de uma conversa que não está na memória: veio do índice (o texto
+/// guardado nele), que leu o cache em disco.
+fn awayResult(app: *App) ?*const search.Result {
+    for (search.results.items) |*r| {
+        const cs = app.store.channel(r.channel) orelse continue;
+        if (cs.history != .loaded and r.local) return r;
+    }
+    return null;
+}
+fn searchFromDisk(app: *App) bool {
+    if (search.scanning) return false;
+    const r = awayResult(app) orelse return false;
     search_target = .{ .ch = r.channel, .id = r.id };
-    return r.disk;
+    return true;
 }
 fn searchClose(_: *App) void {
     search.close();
@@ -2615,7 +2632,7 @@ const ops = [_]Op{
     .{ .run = unloadMemes },
     ctrl(c.ImGuiKey_F),
     .{ .text = "in:memes" },
-    expect("canal fora da memória: a busca acha no cache em disco", searchFromDisk),
+    expect("canal fora da memória: a busca acha pelo índice, que leu o cache em disco", searchFromDisk),
     .{ .shot = "50-busca-disco" },
     .{ .run = searchMarkReads },
     key(c.ImGuiKey_Escape),
@@ -2626,8 +2643,8 @@ const ops = [_]Op{
     click("search-result:0"),
     .{ .expect = .{ .name = "clicar no resultado abre o canal e pula até a mensagem", .check = searchJumped, .timeout_ms = 4000 } },
     .{ .run = searchClose },
-    .{ .run = searchClosedLongAgo },
-    expect("fechada há minutos, a busca solta o índice do disco (até 16 MB)", searchIndexFreed),
+    .{ .run = searchHiddenRelease },
+    expect("janela escondida: o índice da busca vai para o disco e sai da memória", searchIndexFreed),
 } ++ @import("qa_busca.zig").ops ++ @import("qa_convites.zig").ops ++ @import("qa_conta.zig").ops ++ [_]Op{
     ctrl(c.ImGuiKey_Comma),
     click("settings:Privacidade"),
