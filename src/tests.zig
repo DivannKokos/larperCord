@@ -53,6 +53,8 @@ test {
     _ = @import("core/media_flags.zig");
     _ = @import("core/media_refresh.zig");
     _ = @import("core/ogg_opus.zig");
+    _ = @import("core/ogg_escrita.zig");
+    _ = @import("core/gravacao.zig");
     _ = @import("core/stickers.zig");
     _ = @import("core/reply_preview.zig");
     _ = @import("core/search_query.zig");

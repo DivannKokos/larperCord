@@ -3282,6 +3282,7 @@ const ops_threads = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @impo
 const ops_midia = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_midia.zig").ops;
 const ops_convites = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_convites.zig").ops;
 const ops_envio = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_envio.zig").ops;
+const ops_gravar = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_gravar.zig").ops;
 const ops_limites = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_limites.zig").ops;
 const ops_conta = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_conta.zig").ops;
 const ops_social = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_social.zig").ops;
@@ -3356,6 +3357,7 @@ const suites = [_]struct { []const u8, []const Op }{
     .{ "midia", &ops_midia },
     .{ "convites", &ops_convites },
     .{ "envio", &ops_envio },
+    .{ "gravar-audio", &ops_gravar },
     .{ "limites", &ops_limites },
     .{ "conta", &ops_conta },
     .{ "social", &ops_social },

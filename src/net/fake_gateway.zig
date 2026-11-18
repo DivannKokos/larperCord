@@ -83,6 +83,13 @@ pub const sent = struct {
     pub var sends: A = .init(0);
     pub var send_body: [8192]u8 = undefined;
     pub var send_body_len: A = .init(0);
+    /// O tipo da parte de cada arquivo do último envio, separados por vírgula
+    /// (envio_json.partType, como o de verdade põe no multipart; vazio = o do curl),
+    /// e o caminho do primeiro arquivo.
+    pub var send_types: [160]u8 = undefined;
+    pub var send_types_len: A = .init(0);
+    pub var send_file: [512]u8 = undefined;
+    pub var send_file_len: A = .init(0);
     pub var votes: A = .init(0);
     pub var vote_body: [160]u8 = undefined;
     pub var vote_len: A = .init(0);
@@ -620,6 +627,11 @@ pub const Gateway = struct {
                         defer b.deinit(alloc);
                         envio_json.messageBody(&b, alloc, .{ .content = m.content, .nonce = m.nonce, .reply_to = m.reply_to, .opts = m.opts, .names = names[0..nf], .files = m.file_opts }) catch {};
                         sent.keep(&sent.send_body, &sent.send_body_len, b.items);
+                        var tb: [160]u8 = undefined;
+                        var tw = std.Io.Writer.fixed(&tb);
+                        for (names[0..nf], 0..) |nm, i| tw.print("{s}{s}", .{ if (i > 0) "," else "", envio_json.partType(nm) orelse "" }) catch {};
+                        sent.keep(&sent.send_types, &sent.send_types_len, tw.buffered());
+                        sent.keep(&sent.send_file, &sent.send_file_len, if (nf > 0) m.files[0] else "");
                         _ = sent.sends.fetchAdd(1, .monotonic);
                     }
                     envio.freeFileOpts(alloc, m.file_opts);

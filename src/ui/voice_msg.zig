@@ -5,7 +5,8 @@
 //! stream do SDL no dispositivo de saída escolhido na página Voz, com o volume
 //! de saída de lá. A thread e o stream só existem enquanto toca: pausar fecha
 //! os dois e guarda onde parou (o arquivo baixado fica, para continuar sem
-//! baixar de novo). Um áudio por vez. Gravar e enviar não existe aqui.
+//! baixar de novo). Um áudio por vez. Gravar fica em ui/gravar_audio.zig, e o
+//! que se grava lá vai como um arquivo .ogg comum, não como mensagem de voz.
 const std = @import("std");
 const c = @import("c");
 const d = @import("draw.zig");

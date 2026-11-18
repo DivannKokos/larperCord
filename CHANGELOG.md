@@ -52,6 +52,7 @@
 
 **Calls**
 - With push-to-talk on, the Off button of noise suppression works again: it had the same id as the shortcut box above it (#35).
+- Record audio from the message box: the microphone button next to the options (or Ctrl+Shift+R, changeable in Settings → Keybinds) records with the microphone chosen in Settings → Voice, with its volume and noise suppression. While it records, a bar takes the place of the box with the time and the live level; Send (Enter) sends it and Cancel (Esc) throws it away. It goes as a regular .ogg file (Opus, mono, 32 kbit/s, about 240 KB per minute), the same way as any attached file and replying if the box is replying, and the text you were typing stays in the box. Up to 10 minutes, with a warning in the last 30 seconds. It doesn't record during a call or where you can't attach files (the button says why), and Settings → Chat → Record audio button hides it.
 
 ## 0.6.6
 

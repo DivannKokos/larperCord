@@ -52,6 +52,7 @@
 
 **Chamadas**
 - Com o aperte para falar ligado, o "Desligado" da supressão de ruído volta a funcionar: ele tinha o mesmo número da caixa do atalho, logo acima (#35).
+- Gravar áudio na caixa de mensagem: o botão do microfone ao lado das opções (ou Ctrl+Shift+R, que dá para trocar em Configurações → Atalhos de teclado) grava pelo microfone escolhido em Configurações → Voz, com o volume e a supressão de ruído de lá. Enquanto grava, uma barra fica no lugar da caixa com o tempo e o nível ao vivo; Enviar (Enter) manda e Cancelar (Esc) joga fora. Vai como um arquivo .ogg comum (Opus, mono, 32 kbit/s, uns 240 KB por minuto), pelo mesmo caminho de qualquer arquivo anexado e respondendo se a caixa está respondendo, e o texto que você estava escrevendo continua na caixa. Até 10 minutos, com aviso nos últimos 30 segundos. Não grava durante uma call nem onde você não pode anexar arquivos (o botão diz o motivo), e Configurações → Chat → Botão de gravar áudio esconde ele.
 
 ## 0.6.6
 

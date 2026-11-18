@@ -325,6 +325,8 @@ fn shortcuts(ctx: *d.Ctx) void {
     // Mudo e ensurdecer (as dicas dos botões mostram a combinação de agora).
     if (K.on(kb, io, .mutar, false)) ctx.act(.toggle_mute);
     if (K.on(kb, io, .ensurdecer, false)) ctx.act(.toggle_deafen);
+    // Gravar áudio na caixa (ou, gravando, enviar): quem atende é o botão dela.
+    if (K.on(kb, io, .gravar_audio, false) and !ctx.st.settings.open) @import("gravar_audio.zig").shortcut();
     if (io.*.KeyAlt) {
         const keys = [_]c_int{ c.ImGuiKey_1, c.ImGuiKey_2, c.ImGuiKey_3, c.ImGuiKey_4, c.ImGuiKey_5, c.ImGuiKey_6, c.ImGuiKey_7, c.ImGuiKey_8, c.ImGuiKey_9 };
         for (keys, 0..) |k, i| if (c.ImGui_IsKeyPressed(k)) ctx.act(.{ .focus_tab = i });

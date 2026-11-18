@@ -641,6 +641,7 @@ pub const App = struct {
         app.picked.deinit();
         @import("ui/video.zig").shutdown();
         @import("ui/voice_msg.zig").shutdown();
+        @import("ui/gravar_audio.zig").shutdown();
         // (Por último, lá dentro: as threads de mídia e de vídeo usam o libcurl.)
         app.images.deinit();
         app.st.saved.deinit(app.gpa);
@@ -1547,44 +1548,69 @@ pub const App = struct {
 
     /// Com as opções de envio (silenciosa, sem prévias, menções) da caixa de texto.
     pub fn sendWithOpts(app: *App, ch: types.Id, text: []const u8, reply_to: types.Id, with_uploads: bool, opts: envio.SendOpts) void {
-        if (!app.sendAllowed(ch)) return;
-        const out_text = mentions.expand(app.gpa, &app.store, app.guildOfChannel(ch), text, &.{}) catch return;
+        const ups = if (with_uploads) app.st.uploads.items else &.{};
+        // Os caminhos passam para o comando; a bandeja esvazia.
+        if (app.sendFiles(ch, text, reply_to, ups, opts) and ups.len > 0) app.st.uploads.clearRetainingCapacity();
+    }
+
+    /// Manda `text` com os arquivos `ups` (da bandeja, ou o áudio gravado). true = os
+    /// caminhos passaram para o comando (quem chamou não os solta mais).
+    fn sendFiles(app: *App, ch: types.Id, text: []const u8, reply_to: types.Id, ups: []const @import("ui/state.zig").Upload, opts: envio.SendOpts) bool {
+        if (!app.sendAllowed(ch)) return false;
+        const out_text = mentions.expand(app.gpa, &app.store, app.guildOfChannel(ch), text, &.{}) catch return false;
         defer app.gpa.free(out_text);
         app.st.nonce += 1;
-        // Os arquivos da bandeja vão junto: aparecem na hora na cópia pendente.
+        // Os arquivos vão junto: aparecem na hora na cópia pendente.
         const ca = std.heap.c_allocator;
-        const ups = if (with_uploads) app.st.uploads.items else &.{};
         var atts: []types.Attachment = &.{};
         var files: [][:0]const u8 = &.{};
         var file_opts: []envio.FileOpt = &.{};
         if (ups.len > 0) {
-            atts = ca.alloc(types.Attachment, ups.len) catch return;
-            files = ca.alloc([:0]const u8, ups.len) catch return;
-            file_opts = ca.alloc(envio.FileOpt, ups.len) catch return;
+            atts = ca.alloc(types.Attachment, ups.len) catch return false;
+            files = ca.alloc([:0]const u8, ups.len) catch return false;
+            file_opts = ca.alloc(envio.FileOpt, ups.len) catch return false;
             for (ups, 0..) |u, i| {
                 // O texto alternativo passa da bandeja para o comando.
                 file_opts[i] = .{ .spoiler = u.spoiler, .alt = u.alt };
                 atts[i] = .{
-                    .url = std.fmt.allocPrint(ca, "file://{s}", .{u.path}) catch return,
-                    .filename = ca.dupe(u8, u.name()) catch return,
+                    .url = std.fmt.allocPrint(ca, "file://{s}", .{u.path}) catch return false,
+                    .filename = ca.dupe(u8, u.name()) catch return false,
                     .width = u.width,
                     .height = u.height,
                     .size = @intCast(@min(u.size, std.math.maxInt(u32))),
                 };
                 files[i] = u.path;
             }
-            // Os caminhos passam para o comando; a bandeja esvazia.
-            app.st.uploads.clearRetainingCapacity();
         }
         // Mandar de uma conversa antiga leva ao presente, como no Discord.
         if (app.store.channel(ch)) |cs| if (cs.detached) app.handle(.{ .jump_present = ch });
-        app.store.addPending(ch, out_text, app.st.nonce, reply_to, now(), atts) catch return;
+        app.store.addPending(ch, out_text, app.st.nonce, reply_to, now(), atts) catch return ups.len > 0;
         app.st.scrollOf(ch).stick_bottom = true;
         // Para o "tentar de novo" mandar igual.
         app.store.outbox.put(app.gpa, app.st.nonce, opts, file_opts) catch {};
-        const copy = ca.dupe(u8, out_text) catch return;
+        const copy = ca.dupe(u8, out_text) catch return ups.len > 0;
         app.cmd(.{ .send_message = .{ .channel = ch, .content = copy, .nonce = app.st.nonce, .reply_to = reply_to, .files = files, .opts = opts, .file_opts = file_opts } });
         send_limits.noteSent(&app.store, ch, now());
+        return true;
+    }
+
+    /// O áudio gravado na caixa (ui/gravar_audio.zig): vai sozinho, como um anexo
+    /// comum, respondendo se a caixa está respondendo e com as opções do menu dela.
+    /// O texto escrito e a bandeja ficam onde estão. Não dando para mandar agora
+    /// (modo lento, conectando), ele espera na bandeja, como um arquivo anexado.
+    fn sendRecording(app: *App, path: [:0]u8) void {
+        const st = &app.st;
+        const up: @import("ui/state.zig").Upload = .{ .path = path, .size = sys.fileSize(path.ptr) orelse 0 };
+        const ch = st.activeChannel() orelse return dropUpload(up);
+        var opts = st.send_opts;
+        opts.ping_reply = st.reply_ping or st.reply_to == 0;
+        if (app.sendFiles(ch, "", st.reply_to, &.{up}, opts)) {
+            st.send_opts = .{};
+            st.reply_to = 0;
+            return;
+        }
+        if (st.uploads.items.len >= 10) return dropUpload(up);
+        st.uploads.append(app.gpa, up) catch dropUpload(up);
     }
 
     fn guildOfChannel(app: *const App, ch: types.Id) types.Id {
@@ -2284,6 +2310,7 @@ pub const App = struct {
                 _ = st.uploads.orderedRemove(i);
             },
             .paste_image => app.pasteImage(),
+            .send_recording => |path| app.sendRecording(path),
             .toggle_inbox => {
                 st.palette.open = false;
                 if (st.popup == .inbox) {
