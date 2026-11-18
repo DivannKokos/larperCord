@@ -279,7 +279,7 @@ pub fn tabs(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect) void {
     // Botão direito em qualquer lugar da barra: o menu dos conjuntos de abas.
     qa.mark(r, "tabs-bar", .{});
     if (ctx.st.popup == .none and ctx.hovering(r) and c.ImGui_IsMouseClicked(1) and c.ImGui_IsWindowHovered(c.ImGuiHoveredFlags_RootAndChildWindows))
-        conjuntos.openMenu(ctx, ctx.mouse.x, ctx.mouse.y);
+        conjuntos.openMenu(ctx, ctx.mouse.x, ctx.mouse.y, 0);
     // O conjunto em uso, antes das abas.
     x = conjuntos.chip(ctx, fam, if (tty) .tty else if (underline) .underline else .pills, x, r);
 
@@ -303,6 +303,8 @@ pub fn tabs(ctx: *d.Ctx, n: *const kdl.Node, r: d.Rect) void {
         qa.mark(tr, "tab:{d}", .{i});
         if (hb.clicked) ctx.act(.{ .focus_tab = i });
         if (hb.middle) ctx.act(.{ .close_tab = i });
+        // Numa aba, o mesmo menu leva junto a conversa dela (abrir na janela flutuante).
+        if (hb.right) conjuntos.openMenu(ctx, ctx.mouse.x, ctx.mouse.y, id);
         const k = anim.to(anim.id("tab", id), if (active) 1 else if (hb.hovered) 0.4 else 0, 20);
 
         if (tty) {

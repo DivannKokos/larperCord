@@ -330,3 +330,11 @@ pub fn thread(dl: *c.ImDrawList, cx: f32, cy: f32, col: u32) void {
     c.ImDrawList_AddCircleFilled(dl, v(cx, cy - 1.5), 1, col, 0);
     c.ImDrawList_AddCircleFilled(dl, v(cx + 3, cy - 1.5), 1, col, 0);
 }
+
+/// Janela flutuante (picture-in-picture): a tela com a janelinha no canto.
+pub fn pip(dl: *c.ImDrawList, cx_in: f32, cy_in: f32, col: u32) void {
+    const cx = @round(cx_in);
+    const cy = @round(cy_in);
+    c.ImDrawList_AddRectEx(dl, v(cx - 8, cy - 6.5), v(cx + 8, cy + 6.5), col, 2.5, 1.6, 0);
+    c.ImDrawList_AddRectFilledEx(dl, v(cx + 0.5, cy + 0.5), v(cx + 5.5, cy + 4), col, 1, 0);
+}

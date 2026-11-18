@@ -117,6 +117,30 @@ const commands = [_]Command{
             if (ctx.st.activeChannel()) |id| ctx.act(.{ .open_pins = id });
         }
     }.f },
+    // A janela flutuante (app_flutuante.zig): a conversa aberta, a call, fechar.
+    .{ .pt = "Abrir conversa em janela flutuante", .en = "Open conversation in floating window", .when = struct {
+        fn f(ctx: *d.Ctx) bool {
+            return if (ctx.st.activeChannel()) |id| @import("popup.zig").floats(ctx, id) else false;
+        }
+    }.f, .run = struct {
+        fn f(ctx: *d.Ctx) void {
+            if (ctx.st.activeChannel()) |id| ctx.act(.{ .flutuante = .{ .abrir = .{ .conversa = id } } });
+        }
+    }.f },
+    .{ .pt = "Call em janela flutuante", .en = "Call in floating window", .when = struct {
+        fn f(ctx: *d.Ctx) bool {
+            return ctx.st.voice != null;
+        }
+    }.f, .run = struct {
+        fn f(ctx: *d.Ctx) void {
+            if (ctx.st.voice) |id| ctx.act(.{ .flutuante = .{ .abrir = .{ .call = id } } });
+        }
+    }.f },
+    .{ .pt = "Fechar a janela flutuante", .en = "Close the floating window", .when = struct {
+        fn f(_: *d.Ctx) bool {
+            return @import("flutuante.zig").aberta;
+        }
+    }.f, .run = simple(.{ .flutuante = .fechar }) },
     .{ .pt = "Anexar arquivo", .en = "Attach file", .run = simple(.pick_files) },
     .{ .pt = "Mutar / desmutar microfone", .en = "Mute / unmute microphone", .run = simple(.toggle_mute) },
     .{ .pt = "Ensurdecer / ouvir", .en = "Deafen / undeafen", .run = simple(.toggle_deafen) },

@@ -169,6 +169,12 @@ pub const Settings = struct {
     split_two: i16 = split_two_default,
     split_three_a: i16 = split_three_a_default,
     split_three_b: i16 = split_three_b_default,
+    /// A janela flutuante (app_flutuante.zig): onde e de que tamanho ela estava, nas
+    /// coordenadas do SDL. Largura 0 = nunca aberta; no Wayland a posição não vale.
+    pip_x: i16 = 0,
+    pip_y: i16 = 0,
+    pip_w: i16 = 0,
+    pip_h: i16 = 0,
 
     /// Pergunta ao GitHub se há versão nova ao abrir o app.
     check_updates: bool = true,
@@ -791,6 +797,27 @@ test "largura dos painéis vai e volta, e um arquivo editado à mão não estour
     apply(&older, &old[0]);
     try std.testing.expectEqual(@as(i16, 0), older.width_channels);
     try std.testing.expectEqual(split_two_default, older.split_two);
+}
+
+test "o lugar e o tamanho da janela flutuante vão e voltam (posição negativa: monitor à esquerda)" {
+    const kdl = @import("../theme/kdl.zig");
+    const fl = @import("../core/flutuante.zig");
+    var s: Settings = .{};
+    // Nunca aberta: nada guardado, abre no canto.
+    try std.testing.expectEqual(@as(?fl.Geo, null), fl.lida(s.pip_x, s.pip_y, s.pip_w, s.pip_h));
+    s.pip_x = -1500;
+    s.pip_y = 40;
+    s.pip_w = 380;
+    s.pip_h = 520;
+    var out: std.ArrayList(u8) = .empty;
+    defer out.deinit(std.testing.allocator);
+    try write(&s, "vidro", &out, std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const nodes = try kdl.parse(arena.allocator(), out.items, null);
+    var back: Settings = .{};
+    apply(&back, &nodes[0]);
+    try std.testing.expectEqual(fl.Geo{ .x = -1500, .y = 40, .w = 380, .h = 520 }, fl.lida(back.pip_x, back.pip_y, back.pip_w, back.pip_h).?);
 }
 
 test "ganho do vídeo: mudo em 0, cheio em 100, e um arquivo editado à mão não estoura" {

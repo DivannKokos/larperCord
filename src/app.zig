@@ -59,6 +59,7 @@ const accounts_store = @import("net/accounts_store.zig");
 const app_accounts = @import("app_accounts.zig");
 const app_chamada = @import("app_chamada.zig");
 const app_presenca = @import("app_presenca.zig");
+const app_flutuante = @import("app_flutuante.zig");
 const voz_audio = @import("net/voz_audio.zig");
 const aviso = @import("core/aviso.zig");
 const sons = @import("core/sons.zig");
@@ -252,6 +253,8 @@ pub const App = struct {
     /// A lista de membros do canal aberto (op 14): sai na hora depois de uma
     /// pausa, ou espera a escolha parar numa rajada de trocas.
     sub_wait: Debounce(SubReq) = .{},
+    /// A janela flutuante (app_flutuante.zig); fechada, só esta struct parada.
+    pip: app_flutuante.Pip = .{},
 
     pub fn create(gpa: std.mem.Allocator, opts: Options) !*App {
         const started = c.SDL_GetTicksNS();
@@ -448,7 +451,7 @@ pub const App = struct {
 
     /// Volta da bandeja (ou traz para a frente, se a janela já estava aberta). Com
     /// "Fechar para a bandeja" ligado o ícone fica; desligado, não há ícone para tirar.
-    fn showWindow(app: *App) void {
+    pub fn showWindow(app: *App) void {
         if (!app.st.settings.close_to_tray) tray.hide();
         app.in_tray = false;
         app.tray_misses = 0;
@@ -596,6 +599,8 @@ pub const App = struct {
         // Apagando todos os dados: nada do que sai daqui vai para o disco
         // (platform/apagar.zig fecha a porta também para quem não passa por aqui).
         const keep = !apagar.on();
+        // A janela flutuante primeiro: o lugar dela vai junto com as configurações.
+        app_flutuante.fechar(app, false);
         tray.hide();
         sys.toastExpire(0, true);
         instance.stopListening();
@@ -838,6 +843,8 @@ pub const App = struct {
 
     /// Volta ao estado de antes do login: sem conta, sem abas, sem nada.
     pub fn resetSession(app: *App) void {
+        // A janela flutuante segue algo da conta que está saindo.
+        app_flutuante.fechar(app, true);
         // O que estava na tela vai para o cache antes de sumir, e os conjuntos de
         // abas da conta para o arquivo dela.
         msg_cache.flushDirty(&app.store);
@@ -1539,7 +1546,7 @@ pub const App = struct {
     }
 
     /// Com as opções de envio (silenciosa, sem prévias, menções) da caixa de texto.
-    fn sendWithOpts(app: *App, ch: types.Id, text: []const u8, reply_to: types.Id, with_uploads: bool, opts: envio.SendOpts) void {
+    pub fn sendWithOpts(app: *App, ch: types.Id, text: []const u8, reply_to: types.Id, with_uploads: bool, opts: envio.SendOpts) void {
         if (!app.sendAllowed(ch)) return;
         const out_text = mentions.expand(app.gpa, &app.store, app.guildOfChannel(ch), text, &.{}) catch return;
         defer app.gpa.free(out_text);
@@ -2056,6 +2063,8 @@ pub const App = struct {
                 if (app.store.channel(ch)) |cs| if (!cs.info.group and cs.info.recipient == dm.user) return app.sendTo(ch, dm.text, 0);
                 if (st.pending_dm == dm.user) st.showToast(now(), false, "abrindo a conversa… mande de novo quando ela abrir", "opening the conversation… send it again once it opens", .{});
             },
+            .send_to => |m| app_flutuante.send(app, m.channel, m.text),
+            .flutuante => |p| app_flutuante.pedido(app, p),
             .copy => |text| {
                 defer app.gpa.free(text);
                 const z = app.gpa.dupeSentinel(u8, text, 0) catch return;
@@ -3037,6 +3046,7 @@ pub const App = struct {
             // pela bandeja.
             if (app.restart_wanted or (app.wipe_wanted and !app.opts.qa)) {
                 _ = c.SDL_HideWindow(app.win.window);
+                app_flutuante.esconder(app);
                 break;
             }
             var e: c.SDL_Event = undefined;
@@ -3056,7 +3066,7 @@ pub const App = struct {
             // Com o mouse andando, a animação de destaque também espera o limite dele:
             // é o que mais pede quadro, e só volta ao ritmo da tela quando o mouse para.
             const busy = pending > 0 or (anim.active and !mouse.wanted()) or app.opts.shot != null or app.opts.qa or bench or
-                (login_anim and !app.st.settings.reduce_motion);
+                (login_anim and !app.st.settings.reduce_motion) or app_flutuante.ocupada(app);
             // Dorme até o próximo quadro de um GIF, de uma animação lenta ou
             // do redesenho adiado da rede (o que vier primeiro).
             var due = @min(@min(app.images.next_frame_ms, anim.next_wake_ms), app.sub_wait.due());
@@ -3065,9 +3075,13 @@ pub const App = struct {
             // O tempo das calls (ui/voice_timer.zig) marca a virada do segundo ou do
             // minuto no relógio: até lá, um sono só.
             const t_wait = now();
-            const nap = anim.napFor(if (due == std.math.maxInt(i64)) null else due -| t_wait, if (anim.clock_wake_ms == std.math.maxInt(i64)) null else anim.clock_wake_ms -| t_wait);
+            // A janela flutuante tem os prazos dela (o laço acorda para ela sem um quadro
+            // da principal; `due` continua sendo só o da principal).
+            const pip_due = app_flutuante.proximo(app, t_wait);
+            const sleep_due = @min(due, pip_due);
+            const nap = anim.napFor(if (sleep_due == std.math.maxInt(i64)) null else sleep_due -| t_wait, if (anim.clock_wake_ms == std.math.maxInt(i64)) null else anim.clock_wake_ms -| t_wait);
             due = @min(due, anim.clock_wake_ms);
-            const wait = due -| t_wait;
+            const wait = @min(due, pip_due) -| t_wait;
             var got = if (busy or wait <= 0)
                 c.SDL_PollEvent(&e)
             else if (nap) |ms|
@@ -3087,6 +3101,7 @@ pub const App = struct {
                             app.gw_signaled.store(false, .release);
                             app.drainEvents();
                             bg_dirty = true;
+                            app_flutuante.marcar(app);
                         },
                         .theme => if (!app.st.settings.hot_reload) {} else if (app.themes.reload()) {
                             app.applyThemeStyle();
@@ -3097,6 +3112,8 @@ pub const App = struct {
                             // acorda no minuto cheio): o que muda de minuto em minuto já
                             // está na tela. Outro aviso no mesmo tique ainda redesenha.
                             const minute_only = app.minute_tick.swap(false, .acq_rel);
+                            // A janela flutuante mostra horários e o tempo da call: o minuto que virou.
+                            if (@divFloor(now(), 60_000) != @divFloor(app.pip.ultimo_ms, 60_000)) app_flutuante.marcar(app);
                             if (!minute_only or @divFloor(last_frame_ms, 60_000) != @divFloor(now(), 60_000)) pending = @max(pending, 1) else tick_seen = true;
                             // O relógio já acorda o app: aproveita para gravar o cache
                             // (umas poucas por vez; sobrando, volta no próximo tique).
@@ -3125,7 +3142,10 @@ pub const App = struct {
                                 if (app.tray_misses >= janela.tray_misses_max) app.showWindow();
                             }
                         },
-                        .media => bg_dirty = true,
+                        .media => {
+                            bg_dirty = true;
+                            app_flutuante.marcar(app);
+                        },
                         .token => {
                             timeline.mark(.token_fim);
                             app_accounts.finishStartupLookup(app);
@@ -3155,6 +3175,7 @@ pub const App = struct {
                         .quit => {
                             running = false;
                             _ = c.SDL_HideWindow(app.win.window);
+                            app_flutuante.esconder(app);
                         },
                         .plugins => {
                             app.plugins.drain();
@@ -3165,6 +3186,10 @@ pub const App = struct {
                             pending = @max(pending, 2);
                         },
                     }
+                } else if (app_flutuante.owns(app, &e)) {
+                    // Da janela flutuante: vai para o contexto dela (nunca fecha o app nem
+                    // vai para a bandeja, e não pede quadro da principal).
+                    app_flutuante.onEvent(app, &e);
                 } else {
                     // Sem botão apertado, passar por cima das coisas pode esperar o
                     // próximo quadro (o ImGui guarda onde o mouse está).
@@ -3196,6 +3221,7 @@ pub const App = struct {
                         running = false;
                         // Some da tela na hora; o resto do encerramento é por trás.
                         _ = c.SDL_HideWindow(app.win.window);
+                        app_flutuante.esconder(app);
                     }
                     // Arquivo arrastado para a janela: vai para a bandeja (e o mascote do canto come).
                     if (e.type == c.SDL_EVENT_DROP_POSITION) @import("ui/mascote_pet.zig").onDragOver(now());
@@ -3224,7 +3250,10 @@ pub const App = struct {
             // (são todos os canais).
             if (now() - typing_check_ms >= 250) {
                 typing_check_ms = now();
-                if (app.store.expireTyping(typing_check_ms)) pending = 2;
+                if (app.store.expireTyping(typing_check_ms)) {
+                    pending = 2;
+                    app_flutuante.marcar(app);
+                }
             }
             if (app.notifiers.items.len > 0) app.reapNotifiers();
             app.flushSubscribe();
@@ -3233,7 +3262,10 @@ pub const App = struct {
             if (running) app.syncTray();
 
             app.images.now_ms = now();
-            if (app.images.pump()) bg_dirty = true;
+            if (app.images.pump()) {
+                bg_dirty = true;
+                app_flutuante.marcar(app);
+            }
             if (app.images.takeCopied()) |ok| {
                 if (ok) app.st.showToast(now(), false, "imagem copiada", "image copied", .{}) else app.st.showToast(now(), true, "não deu para copiar a imagem", "couldn't copy the image", .{});
             }
@@ -3268,7 +3300,12 @@ pub const App = struct {
             const now_ms = now();
             // Nada venceu ainda: não há por que redesenhar.
             // Nem o tique do minuto com um quadro já desenhado neste minuto.
-            if ((timed_out or (tick_seen and !busy)) and pending == 0 and !bg_dirty and !mouse.wanted() and !was_active and now_ms < due) continue;
+            if ((timed_out or (tick_seen and !busy)) and pending == 0 and !bg_dirty and !mouse.wanted() and !was_active and now_ms < due) {
+                // Nada da principal venceu: a janela flutuante pode ter o dela. Se ela
+                // mexeu no app (mudo, mandou), a principal redesenha.
+                if (!app_flutuante.talvez(app, now_ms)) continue;
+                pending = 2;
+            }
             const win_flags = c.SDL_GetWindowFlags(app.win.window);
             if (win_flags & hidden_flags != 0 and running and !app.opts.qa and app.opts.shot == null and !bench and record_dir == null) {
                 bg_dirty = false;
@@ -3280,7 +3317,8 @@ pub const App = struct {
                 anim.next_wake_ms = std.math.maxInt(i64);
                 anim.clock_wake_ms = std.math.maxInt(i64);
                 app.images.next_frame_ms = std.math.maxInt(i64);
-                if (win_flags & (c.SDL_WINDOW_MINIMIZED | c.SDL_WINDOW_HIDDEN) == 0) {
+                // A janela flutuante continua com a principal escondida, e usa as imagens dela.
+                if (win_flags & (c.SDL_WINDOW_MINIMIZED | c.SDL_WINDOW_HIDDEN) == 0 or app_flutuante.aberta(app)) {
                     hidden_since_ms = 0;
                 } else if (hidden_since_ms == 0) {
                     hidden_since_ms = now_ms;
@@ -3293,13 +3331,18 @@ pub const App = struct {
                         if (app.opts.stats) std.log.info("janela escondida: soltou {d} KB, ficaram {d} imagens, {d} KB", .{ (before - app.images.bytes) / 1024, app.images.readyCount(), app.images.bytes / 1024 });
                     }
                 }
+                _ = app_flutuante.talvez(app, now_ms);
                 continue;
             }
             hidden_since_ms = 0;
             // Só coisa da rede ou o mouse passando, e o último quadro foi agora há pouco: espera.
             const soft_ms = if (mouse.wanted()) ritmo.MousePace.interval_ms else bg_frame_ms;
             if ((bg_dirty or mouse.wanted()) and pending == 0 and (!was_active or mouse.wanted()) and app.opts.shot == null and !app.opts.qa and
-                !app.login.visible() and now_ms - last_frame_ms < soft_ms and now_ms < @min(@min(app.images.next_frame_ms, anim.next_wake_ms), anim.clock_wake_ms)) continue;
+                !app.login.visible() and now_ms - last_frame_ms < soft_ms and now_ms < @min(@min(app.images.next_frame_ms, anim.next_wake_ms), anim.clock_wake_ms))
+            {
+                if (!app_flutuante.talvez(app, now_ms)) continue;
+                pending = 2;
+            }
             if (app.opts.stats) {
                 const why: usize = if (pending > 0) 0 else if (was_active) 1 else if (now_ms >= app.images.next_frame_ms) 2 else if (now_ms >= anim.next_wake_ms or now_ms >= anim.clock_wake_ms) 3 else if (mouse.wanted()) 4 else if (bg_dirty) 5 else 6;
                 prof_why[why] += 1;
@@ -3531,7 +3574,10 @@ pub const App = struct {
                 prof_actions.getPtr(std.meta.activeTag(a)).* += 1;
             };
             for (app.actions.items) |a| app.handle(a);
-            if (app.actions.items.len > 0) pending = 3;
+            if (app.actions.items.len > 0) {
+                pending = 3;
+                app_flutuante.marcar(app);
+            }
             app.actions.clearRetainingCapacity();
 
             frames += 1;
@@ -3613,6 +3659,8 @@ pub const App = struct {
             // (A tela aberta pelo retrato em disco já está em uso antes do READY.)
             if (app.opts.qa and (app.store.ready or app.store.from_cache or app.login.visible()) and !runner.tick(app)) running = false;
             if (show) _ = c.SDL_RenderPresent(r);
+            // A janela flutuante depois do quadro da principal (o renderizador já está livre).
+            if (app_flutuante.talvez(app, now_ms)) pending = @max(pending, 2);
             if (pending > 0) pending -= 1;
             if (fonts_mod.scriptsWanted()) pending = @max(pending, 1);
             was_active = anim.active;

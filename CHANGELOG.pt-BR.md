@@ -2,6 +2,10 @@
 
 ## 0.6.7
 
+**Janela flutuante**
+- Picture-in-picture: clique com o botão direito no nome da conversa no cabeçalho, numa aba ou num canal (ou use a paleta de comandos) e escolha "Abrir em janela flutuante", ou aperte o botão novo na barra da call: uma janela pequena à parte, sempre por cima e redimensionável, acompanha aquela conversa ao vivo com uma caixa para responder, ou a call com o quadro de cada um, quem está falando e os botões de mutar, ensurdecer e sair. O botão da setinha traz a janela principal de volta naquela conversa ou call, até da bandeja, e a flutuante continua funcionando com a principal escondida na bandeja. A barra de cima arrasta a janela, ela lembra o tamanho e o lugar, fecha sozinha quando a call acaba, e fica uma aberta de cada vez.
+- Continua leve: desenha com as fontes, as fotos e os emojis da janela principal (nada é carregado duas vezes), só quando algo nela muda, e fechada não custa nada. No Wayland quem decide se uma janela fica por cima é o compositor (o KWin e o Hyprland deixam fixar), e o app avisa na primeira vez. O japonês segue os textos novos; os novos em russo estão em inglês por enquanto.
+
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
