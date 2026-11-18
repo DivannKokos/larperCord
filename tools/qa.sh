@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 # QA completo: a bateria geral no tema classico, a tela de login e a bateria
 # por tema em todos os temas, no escuro e no claro. Não abre janela. Prints em qa-out/.
+#
+# QA_PARTE: só um pedaço, para a CI dividir o QA entre várias máquinas ao mesmo tempo:
+# "geral", "outras" (o resto das baterias, o login e os scripts) ou "temas:classico,vidro"
+# (a bateria por tema só nesses). Sem ela, tudo. QA_BIN: um executável já compilado
+# (com o robô), no lugar de compilar aqui.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-# Debug (com as checagens de segurança), instalado à parte para não trocar
-# o executável de zig-out/ (que é ReleaseFast).
-zig build -Doptimize=debug -p .zig-cache/qa || exit 1
+parte="${QA_PARTE:-}"
+if [ -n "${QA_BIN:-}" ]; then
+    bin="$QA_BIN"
+else
+    # Debug (com as checagens de segurança), instalado à parte para não trocar
+    # o executável de zig-out/ (que é ReleaseFast).
+    zig build -Doptimize=debug -p .zig-cache/qa || exit 1
+    bin=./.zig-cache/qa/bin/larpercord
+fi
 rm -rf qa-out && mkdir -p qa-out
-bin=./.zig-cache/qa/bin/larpercord
 total_fail=0
 run() {
     local label="$1"; shift
@@ -28,7 +38,16 @@ run() {
         fi
     fi
 }
+temas="classico vidro terminal subsolo orbital editorial bolhas zen papel escritorio cupertino"
+case "$parte" in
+    "" | geral | outras) ;;
+    temas:*) temas="${parte#temas:}"; temas="${temas//,/ }" ;;
+    *) echo "QA_PARTE desconhecida: $parte (geral, outras ou temas:<tema>,<tema>)"; exit 1 ;;
+esac
+if [ -z "$parte" ] || [ "$parte" = geral ]; then
 run "geral (classico)" $bin --qa --theme classico
+fi
+if [ -z "$parte" ] || [ "$parte" = outras ]; then
 QA_SUITE=extras LARPER_NO_FFMPEG=1 run "extras" $bin --qa --theme classico
 QA_SUITE=envio run "envio" $bin --qa --theme classico
 QA_SUITE=limites run "limites" $bin --qa --theme classico
@@ -85,9 +104,12 @@ QA_SUITE=plugins-b run "plugins (depois)" $bin --qa
 for m in escuro claro; do
     QA_SUITE=login QA_PREFIX="$m-" run "login ($m)" $bin --qa --mode "$m"
 done
-for t in classico vidro terminal subsolo orbital editorial bolhas zen papel escritorio cupertino; do
+fi
+if [ -z "$parte" ] || [[ "$parte" == temas:* ]]; then
+for t in $temas; do
     for m in escuro claro; do
         QA_SUITE=tema QA_PREFIX="$t-$m-" run "$t ($m)" $bin --qa --theme "$t" --mode "$m"
     done
 done
+fi
 [ "$total_fail" = 0 ] && echo "tudo passou ✓" || { echo "houve falhas"; exit 1; }
