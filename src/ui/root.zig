@@ -294,6 +294,7 @@ fn shortcuts(ctx: *d.Ctx) void {
         }
     };
     if (K.on(kb, io, .tela_cheia, false)) ctx.act(.toggle_fullscreen);
+    if (K.on(kb, io, .reiniciar, false)) ctx.act(.restart);
     if (K.on(kb, io, .configuracoes, true)) ctx.act(if (ctx.st.settings.open) .close_settings else .open_settings);
     if (K.on(kb, io, .paleta, true)) {
         palette.commands_first = false;
