@@ -124,10 +124,11 @@ The official client is a whole browser dressed up as an app. On the same PC:
 - **Local cache and offline search.** The last 200 messages seen in each channel stay in
   `~/.cache/larpercord/messages` (`%LOCALAPPDATA%\larpercord\messages` on Windows; 50 MB cap, and on
   Linux folders 700 and files 600): the conversation appears
-  right away on open and the real history arrives on top, without jumping the scroll. `Ctrl+F` searches
-  memory and the cache on every keystroke, without internet, with `from:name`, `in:channel`, `has:link`,
-  `has:image` and `has:file`; clicking a result jumps to the message. You can turn it off and
-  erase it in Settings → Privacy.
+  right away on open and the real history arrives on top, without jumping the scroll. `Ctrl+F` answers
+  on every keystroke from a local index of the messages already on your computer, without internet
+  ("hypr" already finds "hyprland"), with `from:name`, `in:channel`, `mentions:name`, `has:link`,
+  `has:image`, `has:file`, `has:video`, `has:sound`, `before:` and `after:`; Enter adds what Discord
+  finds. Clicking a result jumps to the message. You can turn it off and erase it in Settings → Privacy.
 - **Multiple accounts.** Your own name's menu lists the saved accounts (name and picture) and switches
   right away; "Add account" goes back to sign-in without forgetting the others. The sign-in screen
   lists them too, and a token Discord refuses is forgotten instead of being tried again.

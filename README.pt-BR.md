@@ -125,10 +125,12 @@ O cliente oficial é um navegador inteiro disfarçado de app. No mesmo PC:
 - **Cache local e busca offline.** As últimas 200 mensagens vistas de cada canal ficam em
   `~/.cache/larpercord/messages` (`%LOCALAPPDATA%\larpercord\messages` no Windows; teto de 50 MB e, no
   Linux, pastas 700 e arquivos 600): a conversa aparece
-  na hora ao abrir e o histórico de verdade chega por cima, sem pular a rolagem. `Ctrl+F` busca
-  na memória e no cache, a cada tecla e sem internet, com `from:nome`, `in:canal`, `has:link`,
-  `has:imagem` e `has:arquivo`; clicar no resultado pula até a mensagem. Dá para desligar e
-  apagar em Configurações → Privacidade.
+  na hora ao abrir e o histórico de verdade chega por cima, sem pular a rolagem. `Ctrl+F` responde
+  a cada tecla com um índice local das mensagens que já estão no seu computador, sem internet
+  ("hypr" já acha "hyprland"), com `from:nome`, `in:canal`, `mentions:nome`, `has:link`,
+  `has:imagem`, `has:arquivo`, `has:video`, `has:som`, `before:` e `after:`; o Enter junta o que o
+  Discord achar. Clicar no resultado pula até a mensagem. Dá para desligar e apagar em
+  Configurações → Privacidade.
 - **Várias contas.** O menu do próprio nome lista as contas guardadas (nome e foto) e troca na
   hora; "Adicionar conta" volta ao login sem esquecer as outras. A tela de login também lista
   as contas, e um token recusado pelo Discord é esquecido em vez de ser tentado de novo.

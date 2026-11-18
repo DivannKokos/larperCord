@@ -76,18 +76,21 @@ Botões e menus de seleção falam com o bot, com um indicador de carregando e "
 ## Achando as coisas
 
 - **Paleta de comandos** (`Ctrl+K`, ou `Ctrl+Shift+P` para ações primeiro): busca aproximada em canais, DMs, servidores, temas, status, páginas de configurações e todas as opções liga/desliga.
-- **Busca** (`Ctrl+F`): roda na memória e no cache local a cada tecla, sem internet. Os resultados pulam até a mensagem.
+- **Busca** (`Ctrl+F`): responde a cada tecla com um índice local das mensagens que já estão no seu computador (as da memória e as do cache de mensagens), sem internet. O Enter também pergunta ao Discord, que tem o histórico inteiro, e o que ele acha entra junto com o daqui, cada mensagem uma vez. Os resultados pulam até a mensagem.
 
 | Filtro | Encontra |
 |---|---|
 | `from:nome` | mensagens dessa pessoa |
 | `in:canal` | mensagens nesse canal |
+| `mentions:nome` | mensagens que mencionam essa pessoa |
 | `has:link` | mensagens com um link |
 | `has:imagem` | mensagens com uma imagem (`has:image` também funciona) |
 | `has:arquivo` | mensagens com um arquivo (`has:file` também funciona) |
+| `has:video`, `has:som` | mensagens com um vídeo ou um som |
+| `before:`, `after:`, `during:` | mensagens dessas datas (`2026-11-06` ou `06/11/2026`) |
 | `"frase exata"` | essa frase |
 
-A busca ignora maiúsculas e acentos, então `nao` encontra `não`.
+A busca ignora maiúsculas e acentos, então `nao` encontra `não`, e enquanto você digita a última palavra vale como começo de palavra, então `hypr` encontra `hyprland`. `pinned:`, `has:embed` e `has:sticker` só funcionam na busca do Discord (Enter).
 
 - **Caixa de entrada** (`Ctrl+I`): DMs e menções não lidas de todos os servidores, agrupadas por canal, com prévia, ir até a mensagem e "Marcar tudo como lido". Uma segunda aba mostra as menções recentes do Discord.
 - **Mensagens salvas** (`Ctrl+Shift+S`, ou botão direito → Salvar mensagem): até 500, com uma anotação de até 1.000 caracteres. Ficam só no seu computador, e nada vai para o Discord.

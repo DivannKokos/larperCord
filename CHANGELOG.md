@@ -2,6 +2,11 @@
 
 ## 0.6.7
 
+**Messages**
+- Search finds messages instantly as you type, even offline: larperCord keeps a local index of every message it already has, the ones loaded in memory and the ones in the message cache on disk, and keeps it up to date as messages arrive, get edited or deleted and as history pages load (which also drops messages deleted while the app was closed). While you type, the last word counts as the start of a word ("hypr" finds "hyprland"); accents and case don't matter, and Japanese and Chinese are found character by character. from:, in:, mentions:, has:link, image, file, video and sound, before:, after: and during: work on this computer too; pinned:, has:embed and has:sticker still need Discord. Results from here are marked "on this computer".
+- Enter still searches Discord, which has the whole history, and its results join the local ones, each message once. With no connection, Enter doesn't try and says so. Building the index never asks Discord for anything.
+- The index is saved next to the message cache, per account, readable only by your user. It's read in the background, rebuilt from the cache when it's missing, follows Settings → Privacy → "Keep messages on disk" (off: memory only) and goes away with Clear cache, a removed account and Delete all data. Settings → Privacy shows how many messages it holds and its size on disk and in memory. In our measurements, 50,000 messages take about 10 MB in memory and 4 MB on disk, and a search takes under 2 ms. Japanese follows the new texts; in Russian they show in English for now.
+
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 

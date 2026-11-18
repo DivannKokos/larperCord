@@ -1046,11 +1046,19 @@ fn page(p: *Page, previews: []const Preview) void {
             }
             {
                 const msg_cache = @import("../net/msg_cache.zig");
+                const busca = @import("../net/busca_local.zig").stats();
                 var sb: [24]u8 = undefined;
                 var lb: [64]u8 = undefined;
-                const size = msg_cache.formatSize(&sb, msg_cache.totalBytes(), i18n.en());
+                // O índice da busca vai junto com o cache.
+                const size = msg_cache.formatSize(&sb, msg_cache.totalBytes() + busca.disk, i18n.en());
                 if (p.button(i18n.fmt(&lb, "Apagar cache ({s})", "Clear cache ({s})", .{size}), true)) ctx.act(.clear_cache);
                 p.y += 8;
+                var db: [24]u8 = undefined;
+                var mb: [24]u8 = undefined;
+                var nb: [200]u8 = undefined;
+                const y0 = p.y;
+                p.note(i18n.fmt(&nb, "Busca neste computador: {d} mensagens, {s} no disco, {s} na memória.", "Search on this computer: {d} messages, {s} on disk, {s} in memory.", .{ busca.docs, msg_cache.formatSize(&db, busca.disk, i18n.en()), msg_cache.formatSize(&mb, busca.mem, i18n.en()) }));
+                qa.mark(.{ .x = p.x, .y = y0, .w = p.w, .h = p.y - y0 }, "search-index-stats", .{});
             }
             p.note(i18n.tr("Fora isso, imagens e avatares só vêm dos servidores do Discord.", "Everything else (images, avatars) only comes from Discord's servers."));
             p.divider();

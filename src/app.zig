@@ -50,6 +50,7 @@ const leitura = @import("core/leitura.zig");
 const saved_ui = @import("ui/saved.zig");
 const app_conjuntos = @import("app_conjuntos.zig");
 const msg_cache = @import("net/msg_cache.zig");
+const busca_local = @import("net/busca_local.zig");
 const state_cache = @import("net/state_cache.zig");
 const state_snapshot = @import("core/state_snapshot.zig");
 const jsonx = @import("net/jsonx.zig");
@@ -117,6 +118,11 @@ fn setupLsp(qa_mode: bool) void {
         break :blk std.fmt.bufPrint(&buf, "{s}/larpercord/lsp-scratch", .{base}) catch "";
     };
     lsp_net.setup(&lspWake, dir);
+}
+
+/// A thread da busca local terminou de ler o índice do disco.
+fn buscaWake() void {
+    platform.Window.wake(wake_type_global, .tick);
 }
 
 fn wakeTheme() void {
@@ -274,6 +280,7 @@ pub const App = struct {
         @import("platform/fc_warm.zig").join(fc_warm);
         app.win = try win;
         wake_type_global = app.win.wake_type;
+        busca_local.setWake(&buscaWake);
         timeline.mark(.janela);
 
         _ = c.ImGui_CreateContext(null);
@@ -620,7 +627,10 @@ pub const App = struct {
         if (keep) {
             msg_cache.flushDirty(&app.store);
             _ = state_cache.save(&app.store);
+            // Depois do cache: o índice gravado fica mais novo que os arquivos dele.
+            busca_local.finish();
         }
+        busca_local.deinit();
         msg_cache.deinit();
         app.login.clearToken();
         app.events.deinit();
@@ -833,6 +843,7 @@ pub const App = struct {
         // abas da conta para o arquivo dela.
         msg_cache.flushDirty(&app.store);
         _ = state_cache.save(&app.store);
+        busca_local.reset();
         app.cache_opened = false;
         app.state_saved = false;
         app_conjuntos.reset(app);
@@ -2011,6 +2022,7 @@ pub const App = struct {
                 const f = app.store.findAny(id) orelse return;
                 const ch = f.cs.info.id;
                 app.store.apply(.{ .message_delete = .{ .channel = ch, .id = id, .local = true } }, now()) catch {};
+                busca_local.remove(id);
                 app.cmd(.{ .delete_message = .{ .channel = ch, .id = id } });
                 st.showToast(now(), false, "mensagem excluída", "message deleted", .{});
             },
@@ -2307,6 +2319,7 @@ pub const App = struct {
             .logout, .switch_account, .add_account, .remove_account => app_accounts.handle(app, a),
             .clear_cache => {
                 msg_cache.clearAll(&app.store);
+                busca_local.clear(&app.store);
                 st.showToast(now(), false, "cache apagado", "cache cleared", .{});
             },
         }
@@ -2393,7 +2406,10 @@ pub const App = struct {
             // O READY de verdade em cima do retrato do disco: os silenciados vêm de novo
             // logo atrás dele (read_states), e o que deixou de ser silenciado sai.
             if (e == .ready and !e.ready.cached and app.store.from_cache) app.st.muted_channels.clearRetainingCapacity();
+            // A busca local antes do Store: depois dele, o texto do evento já é dele (ou saiu).
+            busca_local.beforeEvent(&app.store, e);
             app.store.apply(e, now()) catch {};
+            busca_local.afterEvent(&app.store, e);
             if (fetch_dm != 0) app.cmd(.{ .fetch_channel = fetch_dm });
             if (edited != 0) plugin_host.onEdit(app, edited);
             if (quiet) |ch| app.st.filtros.quiet(app.gpa, &app.store, ch);
@@ -2405,6 +2421,9 @@ pub const App = struct {
             // O Discord aceitou: agora sim guarda a conta (e o token, se pediram).
             // Antes do resto: abrir um canal já lê o cache desta conta.
             app_accounts.ready(app);
+            // O índice da busca local vem do disco já (numa thread, sem pressa): o que
+            // chega daqui em diante entra nele.
+            busca_local.startLoad(false);
             app.ready_ms = now();
             app.onReady();
             app.plugins.fireReady();
@@ -3038,6 +3057,9 @@ pub const App = struct {
                                 app.cache_flush_ms = now();
                                 if (msg_cache.flushSome(&app.store, 4)) app.cache_flush_ms -= 50_000;
                             }
+                            // O índice da busca local: lê o disco se ainda não leu ("Guardar
+                            // mensagens no disco" religado) e grava com mudanças a cada 5 minutos.
+                            busca_local.tick(app.store.ready);
                             // O retrato da conta, uma vez por sessão, com o READY assentado.
                             if (!app.state_saved and app.store.ready and now() - app.ready_ms >= state_cache.settle_ms) {
                                 app.state_saved = true;

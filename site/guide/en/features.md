@@ -76,18 +76,21 @@ Buttons and select menus talk to the bot, with a loading indicator and "This int
 ## Finding things
 
 - **Command palette** (`Ctrl+K`, or `Ctrl+Shift+P` for actions first): fuzzy search over channels, DMs, servers, themes, status, settings pages and every toggle.
-- **Search** (`Ctrl+F`): runs over memory and the local cache on every keystroke, with no internet. Results jump to the message.
+- **Search** (`Ctrl+F`): answers on every keystroke from a local index of the messages already on your computer (the ones in memory and in the message cache), with no internet. Enter also asks Discord, which has the whole history, and its results join the local ones, each message once. Results jump to the message.
 
 | Filter | Finds |
 |---|---|
 | `from:name` | messages by that person |
 | `in:channel` | messages in that channel |
+| `mentions:name` | messages that mention that person |
 | `has:link` | messages with a link |
 | `has:image` | messages with an image (`has:imagem` also works) |
 | `has:file` | messages with a file (`has:arquivo` also works) |
+| `has:video`, `has:sound` | messages with a video or a sound |
+| `before:`, `after:`, `during:` | messages from those dates (`2026-11-06` or `06/11/2026`) |
 | `"exact phrase"` | that phrase |
 
-Search ignores case and accents, so `nao` finds `não`.
+Search ignores case and accents, so `nao` finds `não`, and while you type the last word counts as the start of a word, so `hypr` finds `hyprland`. `pinned:`, `has:embed` and `has:sticker` only work in Discord's search (Enter).
 
 - **Inbox** (`Ctrl+I`): unread DMs and mentions from every server, grouped by channel, with previews, jump to message and "mark all as read". A second tab shows recent mentions from Discord.
 - **Saved messages** (`Ctrl+Shift+S`, or right-click → Save message): up to 500, with a note of up to 1,000 characters. Stored only on your computer, and nothing goes to Discord.

@@ -2,6 +2,11 @@
 
 ## 0.6.7
 
+**Mensagens**
+- A busca acha as mensagens na hora, enquanto você digita, mesmo sem internet: o larperCord mantém um índice das mensagens que ele já tem, as carregadas na memória e as do cache de mensagens no disco, e o mantém em dia quando mensagens chegam, são editadas ou apagadas e quando páginas do histórico carregam (o que também tira as apagadas com o app fechado). Enquanto você digita, a última palavra vale como começo de palavra ("hypr" acha "hyprland"); acento e maiúscula não importam, e japonês e chinês são achados caractere por caractere. from:, in:, mentions:, has:link, image, file, video e sound, before:, after: e during: também funcionam neste computador; pinned:, has:embed e has:sticker continuam precisando do Discord. Os resultados daqui vêm marcados "neste computador".
+- O Enter continua buscando no Discord, que tem o histórico inteiro, e o que ele acha entra junto com o daqui, cada mensagem uma vez. Sem conexão, o Enter nem tenta e avisa. Montar o índice nunca pede nada ao Discord.
+- O índice fica gravado ao lado do cache de mensagens, por conta, e só o seu usuário lê. Ele é lido em segundo plano, refeito a partir do cache quando falta, segue Configurações → Privacidade → "Guardar mensagens no disco" (desligado: só na memória) e vai embora com Apagar cache, com a conta removida e com Apagar todos os dados. Configurações → Privacidade mostra quantas mensagens ele tem e o tamanho no disco e na memória. Nas nossas medidas, 50.000 mensagens ocupam cerca de 10 MB na memória e 4 MB no disco, e uma busca leva menos de 2 ms. O japonês segue os textos novos; em russo eles aparecem em inglês por enquanto.
+
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
