@@ -140,9 +140,10 @@ pub fn build(b: *std.Build) void {
     const release = optimize != .debug;
     // Binário das releases: SDL3, curl e OpenSSL dentro dele (ver tools/linux_deps.sh).
     const portable = b.option(bool, "portable", "Liga SDL3, curl e OpenSSL estáticos") orelse false;
-    // Windows sem DLL ao lado (experimental, ver tools/windows_static_deps.sh). O padrão
-    // e as releases continuam com as DLLs, que o atualizador conhece.
-    const single_exe = b.option(bool, "single-exe", "Windows: SDL3, curl e OpenSSL dentro do .exe (experimental)") orelse false;
+    // Windows sem DLL ao lado (tools/windows_static_deps.sh): o das releases desde a 0.6.7,
+    // porque só com o curl e o OpenSSL compilados juntos a conexão sai igual à do Chrome.
+    // O padrão continua com as DLLs, que não pedem compilar nada.
+    const single_exe = b.option(bool, "single-exe", "Windows: SDL3, curl e OpenSSL dentro do .exe (o das releases)") orelse false;
     // O robô de QA (--qa) e suas marcações só entram onde são usados.
     const qa = b.option(bool, "qa", "Inclui o robô de QA (--qa); padrão: só no debug") orelse !release;
     const build_options = b.addOptions();
@@ -151,6 +152,7 @@ pub fn build(b: *std.Build) void {
     // o mesmo que o app liga. O libcurl oficial do Windows traz o dele por dentro.
     const tls_chrome = target.result.os.tag != .windows or single_exe;
     build_options.addOption(bool, "tls_chrome", tls_chrome);
+    build_options.addOption(bool, "single_exe", single_exe);
     // -Dversion: só para testar a atualização a partir de uma versão velha.
     build_options.addOption([]const u8, "version", b.option([]const u8, "version", "Versão gravada no executável") orelse @import("src/core/version.zig").number);
 
@@ -176,6 +178,9 @@ pub fn build(b: *std.Build) void {
     // Sem pkg-config: as bibliotecas vêm de tools/windows_deps.sh.
     const win_deps = b.path(".deps/windows");
     if (windows) {
+        // O .exe único liga o OpenSSL, o curl e a SDL3 de tools/windows_static_deps.sh: os
+        // headers deles vêm antes dos das DLLs (o OpenSSL de lá é outra versão).
+        if (single_exe) translate.addIncludePath(b.path(".deps/windows-static/include"));
         translate.addIncludePath(win_deps.path(b, "include"));
     } else {
         translate.linkSystemLibrary("sdl3", .{});
@@ -323,16 +328,22 @@ pub fn build(b: *std.Build) void {
         const ft = win_deps.path(b, "src/freetype");
         mod.addIncludePath(ft.path(b, "include"));
         translate.addIncludePath(ft.path(b, "include"));
+        if (single_exe) mod.addIncludePath(b.path(".deps/windows-static/include"));
         mod.addIncludePath(win_deps.path(b, "include"));
         mod.addCSourceFiles(.{ .root = ft.path(b, "src"), .files = &freetype_sources, .flags = &.{ "-DFT2_BUILD_LIBRARY", "-DFT_CONFIG_MODULES_H=\"ftmodule.h\"", "-O2", "-fno-sanitize=undefined" } });
         mod.addIncludePath(b.path("src/platform/win"));
+        // Antes da pasta das DLLs, que tem um libcrypto.a do MSYS2 (outra versão, sem brotli):
+        // achado primeiro, ele entrava no lugar do nosso, e o libssl de uma versão ficava
+        // com o libcrypto da outra.
+        if (single_exe) mod.addLibraryPath(b.path(".deps/windows-static/lib"));
         mod.addLibraryPath(win_deps.path(b, "lib"));
         if (single_exe) {
             // O curl de lá é estático: sem o dllimport nos headers.
             mod.addCMacro("CURL_STATICLIB", "1");
             translate.defineCMacro("CURL_STATICLIB", "1");
-            mod.addLibraryPath(b.path(".deps/windows-static/lib"));
-            for ([_][]const u8{ "SDL3", "iconv", "curl", "ssl", "crypto" }) |l| mod.linkSystemLibrary(l, .{ .use_pkg_config = .no, .preferred_link_mode = .static, .search_strategy = .mode_first });
+            // nghttp2, brotli e zstd: o HTTP/2 e as compressões do curl e do OpenSSL, como o
+            // Chrome (tools/windows_static_deps.sh).
+            for ([_][]const u8{ "SDL3", "iconv", "curl", "nghttp2", "ssl", "crypto", "zstd", "brotlienc", "brotlidec", "brotlicommon" }) |l| mod.linkSystemLibrary(l, .{ .use_pkg_config = .no, .preferred_link_mode = .static, .search_strategy = .mode_first });
             // O que a SDL3 e o curl estáticos pedem ao Windows.
             for ([_][]const u8{ "gdi32", "winmm", "imm32", "oleaut32", "version", "uuid", "setupapi", "dinput8", "iphlpapi" }) |l| mod.linkSystemLibrary(l, .{ .use_pkg_config = .no });
         } else {
@@ -625,6 +636,7 @@ fn webModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.buil
     const options = b.addOptions();
     options.addOption(bool, "qa", false);
     options.addOption(bool, "tls_chrome", false);
+    options.addOption(bool, "single_exe", false);
     options.addOption([]const u8, "version", @import("src/core/version.zig").number);
     const m = b.createModule(.{
         .root_source_file = b.path("src/web_main.zig"),

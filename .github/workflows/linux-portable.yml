@@ -60,14 +60,23 @@ jobs:
         with:
           version: 0.17.0
       - run: tools/windows_deps.sh
+      # O OpenSSL, o curl e companhia compilados para o .exe único: só mudam com o script.
+      - uses: actions/cache@v4
+        with:
+          path: .deps/windows-static
+          key: windows-static-${{ hashFiles('tools/windows_static_deps.sh', 'tools/curl-chrome-h2.patch', 'tools/brotlienc_stub.c') }}
+      - run: test -f .deps/windows-static/lib/libcurl.a || tools/windows_static_deps.sh
       - name: Compilar
-        run: zig build -Dtarget=x86_64-windows-gnu -p out/win
+        run: zig build -Dtarget=x86_64-windows-gnu -Dsingle-exe=true -p out/win
+      # O .exe é o único, sem DLL ao lado. As três DLLs continuam na release para quem
+      # atualiza de uma versão antes da 0.6.7: o atualizador dela pede as quatro, e o .exe
+      # novo não carrega as que sobram na pasta.
       - name: O .exe, as DLLs e o zip
         run: |
           mkdir -p rel/larperCord
           cp out/win/bin/larpercord.exe rel/larpercord-windows-x86_64.exe
-          cp out/win/bin/*.dll rel/
-          cp out/win/bin/larpercord.exe out/win/bin/*.dll rel/larperCord/
+          cp .deps/windows/bin/SDL3.dll .deps/windows/bin/libcurl-x64.dll .deps/windows/bin/libcrypto-3-x64.dll rel/
+          cp out/win/bin/larpercord.exe rel/larperCord/
           (cd rel && zip -qr larpercord-windows-x86_64.zip larperCord && rm -r larperCord)
           for f in larpercord-windows-x86_64.exe larpercord-windows-x86_64.zip SDL3.dll libcurl-x64.dll libcrypto-3-x64.dll; do test -s "rel/$f"; done
           ls -l rel

@@ -193,7 +193,7 @@ Todos têm **modo claro e escuro** e **opções próprias** em Configurações �
 
 No Linux, marque o arquivo como executável e rode: `chmod +x larpercord-linux-x86_64 && ./larpercord-linux-x86_64`. Ele pode ficar com esse nome: a atualização troca esse mesmo arquivo. Deixe-o numa pasta sua, como `~/.local/bin`, para ele conseguir se atualizar.
 
-No Windows, descompacte e abra o `larpercord.exe` da pasta `larperCord`. Deixe as três DLLs ao lado dele (`SDL3.dll`, `libcurl-x64.dll`, `libcrypto-3-x64.dll`) e descompacte num lugar onde você pode gravar, fora de `C:\Program Files`, para ele conseguir se atualizar. Ele ainda não tem assinatura de código: se o SmartScreen disser "O Windows protegeu o computador", clique em **Mais informações** e depois em **Executar assim mesmo**. Na página de versões, pegue o zip: o `.exe` e as DLLs soltos lá são para o atualizador e o script de instalação.
+No Windows, descompacte e abra o `larpercord.exe` da pasta `larperCord`. Desde a 0.6.7 ele é um arquivo só, com a SDL3, o libcurl e o OpenSSL dentro. Descompacte num lugar onde você pode gravar, fora de `C:\Program Files`, para ele conseguir se atualizar. Ele ainda não tem assinatura de código: se o SmartScreen disser "O Windows protegeu o computador", clique em **Mais informações** e depois em **Executar assim mesmo**. Na página de versões, pegue o zip: o `.exe` solto lá é para o atualizador e o script de instalação, e as DLLs, só para versões antes da 0.6.7 se atualizarem.
 
 A versão para Linux roda em distros de 2022 para cá (glibc 2.34 ou mais nova). SDL3, libcurl e OpenSSL vêm dentro dela. FreeType, fontconfig, libwebp, Opus e zlib vêm do sistema, e uma distro de desktop costuma já ter. Antes de cada versão, ela é aberta em contêineres de Ubuntu 22.04 e 24.04, Debian 12 e 13, Fedora, openSUSE e Arch, na demonstração e sem GPU.
 
@@ -318,7 +318,8 @@ tools/windows_deps.sh && zig build -Dtarget=x86_64-windows-gnu
 ```
 
 O `zig-out/bin/` fica com o `larpercord.exe` e as DLLs `SDL3.dll`, `libcurl-x64.dll` e `libcrypto-3-x64.dll`:
-copie os quatro juntos. O Windows não precisa de fontconfig nem de fontes extras: o app usa Segoe UI, Consolas,
+copie os quatro juntos. A release é o `.exe` único: o `tools/windows_static_deps.sh` (depois do `tools/windows_deps.sh`)
+compila o OpenSSL, o curl, o nghttp2 e o brotli para ele, e o `-Dsingle-exe=true` os liga, para a conexão parecer a do Chrome. O Windows não precisa de fontconfig nem de fontes extras: o app usa Segoe UI, Consolas,
 Georgia e Segoe UI Emoji de `C:\Windows\Fonts`.
 
 | Comando | |

@@ -192,7 +192,7 @@ All of them have **light and dark modes** and **their own options** in Settings 
 
 On Linux, make the file executable and run it: `chmod +x larpercord-linux-x86_64 && ./larpercord-linux-x86_64`. It can keep that name: an update replaces that same file. Keep it in a folder you own, like `~/.local/bin`, so it can update itself.
 
-On Windows, unzip it and open `larpercord.exe` in the `larperCord` folder. Keep the three DLLs next to it (`SDL3.dll`, `libcurl-x64.dll`, `libcrypto-3-x64.dll`) and unzip it somewhere you can write to, not `C:\Program Files`, so it can update itself. It isn't code-signed yet: if SmartScreen says "Windows protected your PC", click **More info**, then **Run anyway**. On the releases page, take the zip: the loose `.exe` and DLLs there are for the updater and the install script.
+On Windows, unzip it and open `larpercord.exe` in the `larperCord` folder. Since 0.6.7 it's a single file, with SDL3, libcurl and OpenSSL inside. Unzip it somewhere you can write to, not `C:\Program Files`, so it can update itself. It isn't code-signed yet: if SmartScreen says "Windows protected your PC", click **More info**, then **Run anyway**. On the releases page, take the zip: the loose `.exe` there is for the updater and the install script, and the DLLs only for versions before 0.6.7 updating themselves.
 
 The Linux build runs on distros from about 2022 onward (glibc 2.34 or newer). SDL3, libcurl and OpenSSL come inside it. FreeType, fontconfig, libwebp, Opus and zlib come from the system, and a desktop distro usually has them already. Before each release it's opened in Ubuntu 22.04 and 24.04, Debian 12 and 13, Fedora, openSUSE and Arch containers, in demo mode with no GPU.
 
@@ -317,7 +317,8 @@ tools/windows_deps.sh && zig build -Dtarget=x86_64-windows-gnu
 ```
 
 `zig-out/bin/` then has `larpercord.exe` with `SDL3.dll`, `libcurl-x64.dll` and `libcrypto-3-x64.dll`: copy the
-four together. Windows needs no fontconfig and no extra fonts: the app takes Segoe UI, Consolas, Georgia and
+four together. The release is the single `.exe` instead: `tools/windows_static_deps.sh` (after `tools/windows_deps.sh`)
+compiles OpenSSL, curl, nghttp2 and brotli for it, and `-Dsingle-exe=true` links them, so the connection looks like Chrome's. Windows needs no fontconfig and no extra fonts: the app takes Segoe UI, Consolas, Georgia and
 Segoe UI Emoji from `C:\Windows\Fonts`.
 
 | Command | |

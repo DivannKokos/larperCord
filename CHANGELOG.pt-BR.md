@@ -12,7 +12,7 @@
 - Levou kick ou ban de um servidor (ou saiu dele): nada mais vai para lá. A lista de membros do canal que estava aberto lá não é pedida de novo a cada reconexão, o que esperava para ir para ele é descartado, e a call de lá acaba quieta em vez de tentar voltar com o token velho. O mesmo quando acontece com a conexão caída e a sessão nova simplesmente não traz o servidor de volta.
 
 **Rede e privacidade**
-- A conexão agora parece o Chrome que o app já dizia ser. O app mandava os cabeçalhos do Chrome, mas conectava do jeito padrão do OpenSSL, e a impressão da conexão (JA4) dizia outra coisa. Agora o aperto de mão TLS leva as mesmas cifras, grupos, assinaturas e extensões do Chrome 156, com o mesmo JA4. No Linux, o binário da release também fala HTTP/2 com as configurações do Chrome e aceita br e zstd, onde antes caía para HTTP/1.1. Windows: ainda pendente (o curl oficial de lá traz o próprio OpenSSL por dentro).
+- A conexão agora parece o Chrome que o app já dizia ser. O app mandava os cabeçalhos do Chrome, mas conectava do jeito padrão do OpenSSL, e a impressão da conexão (JA4) dizia outra coisa. Agora o aperto de mão TLS leva as mesmas cifras, grupos, assinaturas e extensões do Chrome 156, com o mesmo JA4. No Linux, o binário da release também fala HTTP/2 com as configurações do Chrome e aceita br e zstd, onde antes caía para HTTP/1.1. No Windows também (abaixo).
 - Com o registro de depuração ligado (Configurações → Avançado), cada pedido à API do Discord (método, caminho e status) e cada op que sai pelo gateway (o número e o servidor) ficam anotados, sem token nem conteúdo, para ver o que o app mandou se a conta for marcada de novo.
 - `--tls-fingerprint` mostra a impressão TLS e HTTP/2 do app, como um site que devolve o que recebeu a vê, e tools/tls_check.sh compara com a do Chrome. Nenhum dos dois usa token.
 
@@ -44,6 +44,7 @@
 
 **Instalação**
 - Abrir pelo lançador de apps no Wayland (que define XDG_ACTIVATION_TOKEN para dar o foco à janela) não derruba mais o app na abertura. A ficha é apagada do ambiente quando a janela aparece, e a cópia do ambiente que o app guardava ainda apontava para a lista antiga, mais curta (#44).
+- O Windows agora é um `larpercord.exe` só, com a SDL3, o curl e o OpenSSL dentro: a DLL oficial do curl traz o próprio OpenSSL, fora do alcance do app, então a conexão só conseguia parecer a do Chrome com eles compilados juntos. O zip foi de 11,4 para 9,6 MB. As três DLLs continuam na release para as versões antigas conseguirem se atualizar; o `.exe` novo não carrega as que sobram na pasta, e o `install.ps1` as apaga.
 
 **Chamadas**
 - Com o aperte para falar ligado, o "Desligado" da supressão de ruído volta a funcionar: ele tinha o mesmo número da caixa do atalho, logo acima (#35).

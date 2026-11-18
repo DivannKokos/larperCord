@@ -12,7 +12,7 @@
 - Kicked or banned from a server (or you left it): nothing goes to it anymore. The member list of the channel that was open there is no longer asked for again on every reconnect, what was waiting to be sent to it is dropped, and a call there ends quietly instead of trying to reconnect with the old token. The same when it happens while the connection is down and the new session just doesn't bring the server back.
 
 **Network and privacy**
-- The connection now looks like the Chrome it already claimed to be. The app sent Chrome's headers but connected the way OpenSSL does by default, so its connection fingerprint (JA4) said otherwise. Now the TLS handshake carries the same ciphers, groups, signatures and extensions as Chrome 156, with the same JA4. On Linux, the release binary also speaks HTTP/2 with Chrome's settings and accepts br and zstd, where it used to fall back to HTTP/1.1. Windows: still pending (the official curl build there keeps its own OpenSSL inside).
+- The connection now looks like the Chrome it already claimed to be. The app sent Chrome's headers but connected the way OpenSSL does by default, so its connection fingerprint (JA4) said otherwise. Now the TLS handshake carries the same ciphers, groups, signatures and extensions as Chrome 156, with the same JA4. On Linux, the release binary also speaks HTTP/2 with Chrome's settings and accepts br and zstd, where it used to fall back to HTTP/1.1. On Windows too (below).
 - With the debug log on (Settings → Advanced), each request to Discord's API (method, path and status) and each gateway op that goes out (its number and server) is written down, with no token or content, to see what the app sent if the account ever gets flagged again.
 - `--tls-fingerprint` prints the app's TLS and HTTP/2 fingerprint, as a site that echoes it back sees it, and tools/tls_check.sh compares it with Chrome's. Neither uses a token.
 
@@ -44,6 +44,7 @@
 
 **Install**
 - Opening from an app launcher on Wayland (which sets XDG_ACTIVATION_TOKEN to focus the window) no longer crashes on startup. The token is cleared from the environment when the window shows, and the copy of the environment the app kept still pointed at the old, shorter list (#44).
+- Windows is now a single `larpercord.exe`, with SDL3, curl and OpenSSL inside: the official curl DLL keeps its own OpenSSL, out of the app's reach, so the connection could only look like Chrome's with them built together. The zip went from 11.4 to 9.6 MB. The three DLLs stay in the release so older versions can still update themselves; the new `.exe` doesn't load the ones left in the folder, and `install.ps1` removes them.
 
 **Calls**
 - With push-to-talk on, the Off button of noise suppression works again: it had the same id as the shortcut box above it (#35).
