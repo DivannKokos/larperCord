@@ -53,6 +53,9 @@ test {
     _ = @import("core/ogg_opus.zig");
     _ = @import("core/stickers.zig");
     _ = @import("core/reply_preview.zig");
+    _ = @import("core/exportar.zig");
+    _ = @import("core/salvar.zig");
+    _ = @import("platform/pastas.zig");
     _ = @import("core/search_query.zig");
     _ = @import("core/accounts.zig");
     _ = @import("core/limites.zig");
@@ -118,6 +121,28 @@ test {
     _ = @import("plugins/panel.zig");
     _ = @import("plugins/rewrite.zig");
     _ = @import("plugins/json.zig");
+}
+
+// Exportar uma conversa não pede nada ao Discord (a conta de quem usa já foi
+// desativada uma vez por "atividade suspeita"): nem o trabalho (net/exportar.zig)
+// nem a tela (ui/exportar.zig) conhecem o gateway ou a API, e a parte da exportação
+// nem chama o download (só o "Salvar", pelo clique, baixa um arquivo da CDN). O QA
+// (qa_exportar.zig) conta os comandos e os downloads com o app rodando.
+test "exportar não tem como pedir nada ao Discord" {
+    const trabalho = @embedFile("net/exportar.zig");
+    const tela = @embedFile("ui/exportar.zig");
+    // Montados aos pedaços: senão casariam com este arquivo.
+    const banned = [_][]const u8{ "discord" ++ ".zig\")", "fake_" ++ "gateway.zig\")", "app" ++ ".zig\")", "web_" ++ "client.zig\")", "Authori" ++ "zation:", "Comm" ++ "and" };
+    for ([_][]const u8{ trabalho, tela }) |src| for (banned) |b| try std.testing.expect(std.mem.indexOf(u8, src, b) == null);
+    const from = std.mem.indexOf(u8, trabalho, "// --- " ++ "Exportar") orelse return error.SemExportar;
+    const to = std.mem.indexOf(u8, trabalho, "// --- " ++ "Salvar") orelse return error.SemSalvar;
+    try std.testing.expect(from < to);
+    for ([_][]const u8{ "download" ++ "(", "downloadTo" ++ "(", "tenorVideo" ++ "(", "images." ++ "fetch", "fetch_" ++ "hook", "cu" ++ "rl" }) |w|
+        try std.testing.expect(std.mem.indexOf(u8, trabalho[from..to], w) == null);
+    // A tela só pede ao app o seletor de arquivo.
+    var it = std.mem.splitSequence(u8, tela, "ctx.act" ++ "(");
+    _ = it.next();
+    while (it.next()) |rest| try std.testing.expect(std.mem.startsWith(u8, rest, ".save_dialog)"));
 }
 
 /// Componentes que a interface sabe desenhar (manter igual a ui/root.zig).

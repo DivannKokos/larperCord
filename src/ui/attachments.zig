@@ -15,6 +15,8 @@ const cover = @import("media_cover.zig");
 const voice_msg = @import("voice_msg.zig");
 const media_refresh = @import("../core/media_refresh.zig");
 const gif_fav = @import("gif_fav.zig");
+const salvar = @import("../core/salvar.zig");
+const exportar_ui = @import("exportar.zig");
 
 const Attachment = types.Attachment;
 
@@ -95,7 +97,7 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, m: *const StoredMessage, x: f32, y_i
             image(ctx, dl, a, r, scale, alpha, hid, m.msg.id, i, gif_fav.keyOf(m.msg.content, a));
         } else if (a.voice) {
             voice_msg.draw(ctx, dl, a, r, m.msg.id, i, alpha);
-        } else fileCard(ctx, dl, a, r, alpha, hid);
+        } else fileCard(ctx, dl, a, r, alpha, hid, m.msg.id);
         markVisible(r, m.msg.id, i);
         y += r.h;
     }
@@ -210,7 +212,22 @@ fn image(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, scale:
     }
     if (held_back) d.tip(ctx, r, i18n.tr("Modo economia: clique para baixar", "Data saver: click to download"), hb.hovered);
     if (a.video and !held_back) d.tip(ctx, r, if (video.canPlay(a.link, a.size)) i18n.tr("Tocar o vídeo", "Play video") else i18n.tr("Abrir o vídeo no navegador", "Open video in browser"), hb.hovered);
-    if (hb.right and msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (hb.right and msg_id != 0) mediaMenu(ctx, msg_id, a);
+}
+
+/// O original de um anexo com os links já renovados (o vencido não baixa mais).
+fn pickOf(pb: *salvar.PickBuf, a: *const Attachment) salvar.Pick {
+    const res = &media_refresh.global;
+    var fresh = a.*;
+    fresh.url = res.resolve(a.url);
+    if (a.link.len > 0) fresh.link = res.resolve(a.link);
+    return salvar.ofAttachment(pb, &fresh);
+}
+
+/// Botão direito num anexo: o menu da mensagem, com "Salvar…" e "Salvar em Downloads".
+pub fn mediaMenu(ctx: *d.Ctx, msg_id: types.Id, a: *const Attachment) void {
+    var pb: salvar.PickBuf = .{};
+    exportar_ui.mediaMenu(ctx, msg_id, pickOf(&pb, a));
 }
 
 /// Lugar reservado de uma imagem que o modo economia ainda não baixou.
@@ -229,7 +246,7 @@ pub fn savedPlaceholder(ctx: *d.Ctx, dl: *c.ImDrawList, r: d.Rect, size: u64, al
     if (tw < r.w - 8) d.text(dl, f, 13, r.x + (r.w - tw) / 2, r.y + r.h / 2 + 8, ctx.col(.muted).alpha(alpha), msg);
 }
 
-fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alpha: f32, hid: usize) void {
+fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alpha: f32, hid: usize, msg_id: types.Id) void {
     const hb = d.hit(ctx, hid, r);
     const radius = @max(ctx.th.radius, 6);
     d.rect(dl, r, ctx.col(.elevated).mix(ctx.col(.text), if (hb.hovered) 0.04 else 0).alpha(alpha), radius);
@@ -252,6 +269,7 @@ fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alp
         } else ctx.st.showToast(ctx.now_ms, false, "arquivo de demonstração", "demo file", .{});
     }
     if (res.open_ready and res.takeOpen(a.url)) openUrl(res.resolve(a.url));
+    if (hb.right and msg_id != 0) mediaMenu(ctx, msg_id, a);
 }
 
 /// Botão de play no meio de uma prévia de vídeo.
@@ -280,6 +298,8 @@ pub fn openUrl(url: []const u8) void {
 
 fn open(ctx: *d.Ctx, a: *const Attachment, url: []const u8) void {
     openImage(ctx, url, a.filename, a.width, a.height);
+    var pb: salvar.PickBuf = .{};
+    exportar_ui.setViewerPick(url, pickOf(&pb, a));
 }
 
 /// Abre uma imagem em tela cheia (anexo, embed, foto de perfil…).
@@ -428,13 +448,14 @@ pub fn viewer(ctx: *d.Ctx) void {
     var bx = win.right() - 24;
     // Rótulos em português também servem de marca para o QA. Em campos `.pt`/`.en`: assim o
     // tools/i18n_strings.py os acha.
-    const actions = [_]struct { pt: []const u8, en: []const u8 }{ .{ .pt = "Copiar imagem", .en = "Copy Image" }, .{ .pt = "Copiar link", .en = "Copy Link" }, .{ .pt = "Abrir no navegador", .en = "Open in Browser" } };
+    const actions = [_]struct { pt: []const u8, en: []const u8 }{ .{ .pt = "Copiar imagem", .en = "Copy Image" }, .{ .pt = "Copiar link", .en = "Copy Link" }, .{ .pt = "Abrir no navegador", .en = "Open in Browser" }, .{ .pt = "Salvar em Downloads", .en = "Save to Downloads" }, .{ .pt = "Salvar…", .en = "Save…" } };
     var clicked_action = false;
     for (actions, 0..) |action, i| {
         const mark_label = action.pt;
         const label = i18n.tr(action.pt, action.en);
-        // Copiar a imagem vale também para as da demonstração e para arquivos.
-        const can = i == 0 or std.mem.startsWith(u8, url, "https://");
+        // Copiar e salvar valem também para as da demonstração e para arquivos.
+        if (i >= 3 and !exportar_ui.available()) continue;
+        const can = i == 0 or i >= 3 or std.mem.startsWith(u8, url, "https://");
         const tw = d.width(fam.get(.medium), 13, label);
         const br: d.Rect = .{ .x = bx - tw - 24, .y = by + 2, .w = tw + 24, .h = 32 };
         bx = br.x - 8;
@@ -450,6 +471,11 @@ pub fn viewer(ctx: *d.Ctx) void {
                 ctx.images.copyImage(url);
             } else if (i == 1) {
                 if (ctx.st.gpa.dupe(u8, url)) |owned| ctx.act(.{ .copy = owned }) else |_| {}
+            } else if (i >= 3) {
+                // O original (o anexo inteiro, não a cópia reduzida que está na tela).
+                var pb: salvar.PickBuf = .{};
+                const p = exportar_ui.viewerPick(url, v.name[0..v.name_len], &pb);
+                if (i == 3) exportar_ui.saveToDownloads(ctx, &p) else exportar_ui.saveAs(ctx, p);
             } else openUrl(url);
         }
     }
@@ -461,7 +487,7 @@ pub fn viewer(ctx: *d.Ctx) void {
     d.circle(dl, xr.x + 18, xr.y + 18, 17, d.Rgba.white.alpha((if (xh.hovered) @as(f32, 0.18) else 0.08) * k));
     d.line(dl, xr.x + 12, xr.y + 12, xr.x + 24, xr.y + 24, d.Rgba.white.alpha(k), 1.8);
     d.line(dl, xr.x + 24, xr.y + 12, xr.x + 12, xr.y + 24, d.Rgba.white.alpha(k), 1.8);
-    const outside = c.ImGui_IsMouseClicked(0) and !ir.contains(ctx.mouse.x, ctx.mouse.y) and !clicked_action and ctx.mouse.y < by - 4;
+    const outside = c.ImGui_IsMouseClicked(0) and !ir.contains(ctx.mouse.x, ctx.mouse.y) and !clicked_action and ctx.mouse.y < by - 4 and !exportar_ui.overCard(ctx.mouse.x, ctx.mouse.y);
     if (xh.clicked or outside or c.ImGui_IsKeyPressed(c.ImGuiKey_Escape)) ctx.st.viewer = null;
 }
 

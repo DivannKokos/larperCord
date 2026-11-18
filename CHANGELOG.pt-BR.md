@@ -2,6 +2,11 @@
 
 ## 0.6.7
 
+**Exportar e salvar**
+- Exportar uma conversa: botão direito num canal ou numa DM (ou no nome da conversa, no cabeçalho) → Exportar conversa… e escolha HTML (uma página só, que abre sem internet, com as cores do tema da hora, autores, fotos de perfil que já estavam no computador, horários, formatação, respostas, anexos e os cartões de link básicos), Markdown ou JSON (campos documentados, IDs como texto, horas em ISO), o período entre os dias que estão no computador e se inclui a mídia. O arquivo vai para onde você escolher no seletor do sistema, a mídia numa pasta ao lado. Roda em segundo plano, com andamento e Cancelar, e termina com Abrir e Abrir pasta.
+- Exportar nunca pede nada ao Discord, nem à CDN: só usa o que já está no computador (as mensagens na memória e no cache de mensagens, e os arquivos que o app já baixou). A janela diz quantas mensagens são e desde quando; para incluir as mais antigas, role a conversa para cima antes. A mídia vem desligada; ligada, vão para a pasta as fotos de perfil e as imagens que já estavam no computador, e o resto fica como link para o original. O QA conta cada comando que o app manda e cada download de mídia que ele começa, e confere que exportar não começa nenhum.
+- Salvar imagens, GIFs, vídeos e arquivos no disco: botão direito em um deles (ou os botões do visualizador de imagens) → Salvar… (seletor do sistema com um nome sugerido e a extensão certa) ou Salvar em Downloads (a pasta Downloads do sistema, do user-dirs no Linux e da Known Folder no Windows, com outro nome se o arquivo já existe). Salva o arquivo original, não a prévia reduzida (no Tenor e no Giphy, o GIF de verdade, com Configurações → Privacidade → Animar GIFs do Tenor e do Giphy ligado), aproveitando o que já foi baixado, pelos mesmos domínios permitidos e pelo mesmo proxy das imagens, sem a sua conta. O russo mostra os textos novos em inglês por enquanto; o japonês segue os textos novos.
+
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 

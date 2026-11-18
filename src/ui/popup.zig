@@ -24,6 +24,7 @@ const status_menu = @import("status_menu.zig");
 const forum = @import("forum.zig");
 const thread_settings = @import("thread_settings.zig");
 const engine = @import("../plugins/engine.zig");
+const exportar_ui = @import("exportar.zig");
 
 const quick = [_][]const u8{ "👍", "😂", "😭", "🔥" };
 
@@ -112,6 +113,7 @@ fn popupKey(p: state.Popup) u64 {
         .onboarding => |t| 24 +% t.guild *% 31,
         .devices => |dv| 25 +% @as(u64, @intFromEnum(dv.which)),
         .tab_set_name => |t| 26 +% (if (t.rename) |i| @as(u64, i) + 1 else 0) *% 31,
+        .exportar => |t| 27 +% t.channel *% 31,
     };
 }
 
@@ -194,6 +196,7 @@ pub fn draw(ctx: *d.Ctx) void {
         .onboarding => |t| @import("entrada.zig").drawOnboarding(ctx, t.guild),
         .devices => |dv| @import("device_menu.zig").draw(ctx, dv.which, dv.x, dv.y),
         .tab_set_name => |t| @import("conjuntos.zig").drawName(ctx, t.rename),
+        .exportar => |t| exportar_ui.drawDialog(ctx, t.channel),
         .none => {},
     }
     animateOpen(ctx);
@@ -224,6 +227,17 @@ fn movable(ctx: *d.Ctx, uid: Id) ?*const @import("../core/store.zig").ChannelSta
 /// Volume e "silenciar para mim" no menu de quem está na call com a gente (os
 /// outros ids do menu e do ui/conta_menu.zig não usam estes).
 const id_volume: u8 = 38;
+/// Salvar a mídia clicada e exportar a conversa (ui/exportar.zig).
+const id_save_as: u8 = 16;
+const id_save_downloads: u8 = 17;
+const id_export: u8 = 55;
+
+/// A DM com essa pessoa, se já existe.
+fn dmWith(ctx: *d.Ctx, uid: Id) ?Id {
+    if (uid == ctx.store.me) return null;
+    for (ctx.store.channelsOf(0)) |ch| if (ctx.store.channel(ch)) |cs| if (!cs.info.group and cs.info.recipient == uid) return ch;
+    return null;
+}
 const id_mute_local: u8 = 39;
 const volume_row_h: f32 = 54;
 
@@ -320,7 +334,13 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
         .message => {
             const found = ctx.store.findAny(id) orelse return close(ctx);
             own = found.m.msg.author == ctx.store.me and found.m.msg.id != 0;
-            add(&items, &n, .{ .label = "Responder", .en = "Reply", .id = 1 });
+            // Botão direito numa imagem, vídeo ou arquivo: salvar o original (ui/exportar.zig).
+            const media = exportar_ui.menuTarget(id, x, y);
+            if (media) {
+                add(&items, &n, .{ .label = "Salvar…", .en = "Save…", .id = id_save_as });
+                add(&items, &n, .{ .label = "Salvar em Downloads", .en = "Save to Downloads", .id = id_save_downloads });
+            }
+            add(&items, &n, .{ .label = "Responder", .en = "Reply", .id = 1, .sep = media });
             if (own) add(&items, &n, .{ .label = "Editar mensagem", .en = "Edit Message", .id = 2 });
             add(&items, &n, .{ .label = "Adicionar reação", .en = "Add Reaction", .id = 3 });
             // Quem reagiu: buscado só ao abrir (ui/reactors.zig).
@@ -368,6 +388,8 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
             const conta_at = n;
             n += conta_menu.userItems(ctx, id, items[n..]);
             if (voice_items and n > conta_at) items[conta_at].sep = true;
+            // Na lista de DMs o botão direito abre este menu: exportar a conversa com a pessoa.
+            if (dmWith(ctx, id) != null and exportar_ui.available()) add(&items, &n, .{ .label = "Exportar conversa…", .en = "Export Conversation…", .id = id_export, .sep = true });
             add(&items, &n, .{ .label = "Copiar nome de usuário", .en = "Copy Username", .id = 24, .sep = true });
             if (dev and !hook) add(&items, &n, .{ .label = "Copiar ID do usuário", .en = "Copy User ID", .id = 25 });
             if (movable(ctx, id) != null) {
@@ -404,6 +426,8 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
                 add(&items, &n, .{ .label = "Threads arquivadas", .en = "Archived Threads", .id = 48 });
             };
             if (ctx.store.channel(id)) |ics| if (@import("invites.zig").canInvite(ctx, &ics.info)) add(&items, &n, .{ .label = "Convidar pessoas…", .en = "Invite People…", .id = 56, .sep = true });
+            // Exportar: só conversa de texto (o que já está no computador; nada é pedido ao Discord).
+            if (ctx.store.channel(id)) |ecs| if (ecs.info.kind == .text and exportar_ui.available()) add(&items, &n, .{ .label = "Exportar conversa…", .en = "Export Conversation…", .id = id_export, .sep = true });
             if (ctx.store.channel(id)) |gcs| if (gcs.info.group) {
                 add(&items, &n, .{ .label = "Editar grupo…", .en = "Edit Group…", .id = 53, .sep = true });
                 add(&items, &n, .{ .label = "Pessoas do grupo…", .en = "Group Members…", .id = 57 });
@@ -804,6 +828,11 @@ fn choose(ctx: *d.Ctx, kind: state.MenuKind, id: Id, item: u8, r: d.Rect) void {
             st.voice_guild = cs.info.guild;
             ctx.act(.leave_voice);
         },
+        id_save_as => exportar_ui.saveAsTarget(ctx),
+        id_save_downloads => exportar_ui.saveTargetToDownloads(ctx),
+        id_export => if (kind == .user) {
+            if (dmWith(ctx, id)) |ch| exportar_ui.open(ctx, ch);
+        } else exportar_ui.open(ctx, id),
         43 => if (ctx.store.channel(id)) |cs| {
             var gb: [24]u8 = undefined;
             copyFmt(ctx, "https://discord.com/channels/{s}/{d}", .{ guildPart(&gb, cs.info.guild), id });

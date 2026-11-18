@@ -362,6 +362,7 @@ pub const App = struct {
         mascote_arquivos.setup(wakeMascot);
         // Antes da rede: a thread do gateway inicia o libcurl pelo mesmo caminho.
         app.images = try images.Cache.init(app.win.renderer, app.win.wake_type);
+        @import("ui/exportar.zig").init(app.win.wake_type);
 
         // Com token salvo: conecta direto (a tela de abertura aparece enquanto
         // isso). Sem token: a tela de login. Prints e QA usam a demonstração.
@@ -628,6 +629,8 @@ pub const App = struct {
         app.picked.deinit();
         @import("ui/video.zig").shutdown();
         @import("ui/voice_msg.zig").shutdown();
+        // Exportação ou "Salvar" andando: cancela e espera (só fica o .part, que elas apagam).
+        @import("ui/exportar.zig").shutdown();
         // (Por último, lá dentro: as threads de mídia e de vídeo usam o libcurl.)
         app.images.deinit();
         app.st.saved.deinit(app.gpa);
@@ -2258,6 +2261,8 @@ pub const App = struct {
             },
             .save_settings => app.saveSettings(),
             .pick_files => app.pickFiles(),
+            // No QA nada abre: ui/exportar.zig responde com o caminho que o teste pôs.
+            .save_dialog => @import("ui/exportar.zig").showDialog(app.win.window, app.opts.qa),
             .pick_file => app.pickFile(),
             .remove_upload => |i| if (i < st.uploads.items.len) {
                 dropUpload(st.uploads.items[i]);

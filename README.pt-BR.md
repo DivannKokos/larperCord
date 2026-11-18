@@ -152,6 +152,9 @@ O cliente oficial é um navegador inteiro disfarçado de app. No mesmo PC:
 - **Mídia**: spoilers e mídias sensíveis ficam cobertos até você clicar, sem baixar nada antes; links de
   imagem do Discord vencidos são renovados sozinhos; mensagens de voz têm um player com a onda; GIFs
   longos tocam todos os quadros, e uma estrela em qualquer GIF põe nos seus favoritos.
+- **Exportar e salvar**: botão direito numa conversa → Exportar conversa… grava em HTML (uma página só, que
+  abre sem internet), Markdown ou JSON com o que já está no computador, sem pedir nada ao Discord. Botão
+  direito numa imagem, vídeo ou arquivo → Salvar… ou Salvar em Downloads guarda o arquivo original.
 - **Proxy** (HTTP, HTTPS, SOCKS5, SOCKS5h; Tor em `socks5h://127.0.0.1:9050`), com campos separados para
   endereço, porta, login e senha, para a mídia de fora do Discord ou para tudo menos as calls de voz, que
   sempre conectam direto (Configurações → Rede). A tela de entrada também tem ("Conectar por um

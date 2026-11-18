@@ -211,7 +211,7 @@ fn play(r: *Run) !void {
 
 /// A mensagem de voz da demonstração: uma voz sintética de 4 s, codificada
 /// em Opus aqui mesmo e posta num Ogg (passa pelo mesmo caminho da de verdade).
-fn demoVoice(url: []const u8) ![]u8 {
+pub fn demoVoice(url: []const u8) ![]u8 {
     _ = url;
     var err: c_int = 0;
     const enc = c.opus_encoder_create(@intCast(ogg.rate), 1, c.OPUS_APPLICATION_VOIP, &err) orelse return error.Opus;
@@ -463,5 +463,5 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const types.Attachment, r: d.Rec
             if (!scrubbing) rr.seek_ms.store(target, .release);
         }
     } else if (mine) scrubbing = false;
-    if (bh.right or wh.right) if (msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (bh.right or wh.right) if (msg_id != 0) @import("attachments.zig").mediaMenu(ctx, msg_id, a);
 }

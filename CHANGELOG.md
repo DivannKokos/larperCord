@@ -2,6 +2,11 @@
 
 ## 0.6.7
 
+**Export and save**
+- Export a conversation: right-click a channel or DM (or the conversation's name in the header) → Export Conversation… and pick HTML (a single page that opens offline, in the current theme's colors, with authors, profile pictures that were already on your computer, times, formatting, replies, attachments and basic link cards), Markdown or JSON (documented fields, IDs as text, ISO times), the date range among the days on your computer, and whether to include media. The file goes where you choose in the system's save dialog, media in a folder next to it. It runs in the background with progress and Cancel, and ends with Open and Open folder.
+- Export never asks Discord for anything, not even its CDN: it only uses what's already on your computer (the messages in memory and in the message cache, and the files the app already downloaded). The window says how many messages there are and since when; to include older ones, scroll up in the conversation first. Media is off by default; when on, the folder gets the profile pictures and images that were already on your computer, and everything else stays as a link to the original. The QA counts every command the app sends and every media download it starts, and checks that exporting starts none.
+- Save images, GIFs, videos and files to disk: right-click one (or use the buttons in the image viewer) → Save… (system dialog with a suggested name and the right extension) or Save to Downloads (the system's Downloads folder, from user-dirs on Linux and the Known Folder on Windows, with a new name if the file already exists). It saves the original file, not the reduced preview (for Tenor and Giphy, the real GIF, when Settings → Privacy → Animate Tenor and Giphy GIFs is on), reusing what's already downloaded, through the same allowed domains and proxy as images, without your account. Russian shows the new texts in English for now; Japanese follows them.
+
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 

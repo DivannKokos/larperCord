@@ -82,7 +82,14 @@ pub fn choose(ctx: *d.Ctx, id: Id, item: u8) void {
 /// Título de uma thread no cabeçalho: clicar abre o menu dela (com editar,
 /// arquivar e trancar). Fora de thread não faz nada.
 pub fn headerTitle(ctx: *d.Ctx, dl: *c.ImDrawList, ch: *const types.Channel, r: d.Rect) void {
-    if (ch.thread == null or ch.guild == 0) return;
+    if (ch.thread == null or ch.guild == 0) {
+        // Fora de thread: o botão direito no nome abre o menu da conversa (exportar,
+        // silenciar…). Sem mudar o cursor: o clique comum no nome não faz nada.
+        qa.mark(r, "header-title", .{});
+        if (c.ImGui_IsMouseClicked(1) and r.contains(ctx.mouse.x, ctx.mouse.y) and c.ImGui_IsWindowHovered(c.ImGuiHoveredFlags_RootAndChildWindows))
+            ctx.popup(.{ .menu = .{ .kind = .channel, .id = ch.id, .x = r.x, .y = r.bottom() + 4 } });
+        return;
+    }
     const hb = d.hit(ctx, @truncate((ch.id *% 0x9E3779B97F4A7C15) ^ 0x7E1), r);
     qa.mark(r, "header-thread", .{});
     if (hb.clicked or hb.right) ctx.popup(.{ .menu = .{ .kind = .channel, .id = ch.id, .x = r.x, .y = r.bottom() + 4 } });
