@@ -1,7 +1,7 @@
 // one-dark.kdl: The calm, neutral classic from Atom
 // Made in the larperCord theme builder, starting from orbital.
 // https://rshacudevidro.github.io/larperCord/theme-builder.html
-theme "One Dark" description="O clássico calmo e neutro do Atom." description-en="The calm, neutral classic from Atom" author="mealet" license="MIT" preview=glass
+theme "One Dark" description="O clássico calmo e neutro do Atom. Cores do One Dark, do Atom (MIT)." description-en="The calm, neutral classic from Atom. Colors from Atom's One Dark (MIT)." author="mealet" license="MIT" preview=glass
 palette "#282c34" "#e06c75" "#98c379" "#e5c07b" "#61afef" "#c678dd" "#56b6c2" "#abb2bf" "#5c6370" "#e06c75" "#98c379" "#e5c07b" "#61afef" "#c678dd" "#56b6c2" "#ffffff"
 
 colors mode=dark {

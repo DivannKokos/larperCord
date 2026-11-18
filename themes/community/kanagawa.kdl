@@ -1,7 +1,7 @@
 // kanagawa.kdl: Muted ink and paper, inspired by Hokusai's Great Wave
 // Made in the larperCord theme builder, starting from orbital.
 // https://rshacudevidro.github.io/larperCord/theme-builder.html
-theme "Kanagawa" description="Tinta e papel suaves, inspirados na Grande Onda de Hokusai." description-en="Muted ink and paper, inspired by Hokusai's Great Wave" author="mealet" license="MIT" preview=glass
+theme "Kanagawa" description="Tinta e papel suaves, inspirados na Grande Onda de Hokusai. Cores do Kanagawa, de rebelot (MIT)." description-en="Muted ink and paper, inspired by Hokusai's Great Wave. Colors from Kanagawa by rebelot (MIT)." author="mealet" license="MIT" preview=glass
 palette "#090618" "#c34043" "#76946a" "#c0a36e" "#7e9cd8" "#957fb8" "#6a9589" "#c8c093" "#727169" "#e82424" "#98bb6c" "#e6c384" "#7fb4ca" "#938aa9" "#7aa89f" "#dcd7ba"
 
 colors mode=dark {

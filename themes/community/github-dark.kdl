@@ -1,7 +1,7 @@
 // github-dark.kdl: Restrained, readable and easy on the eyes
 // Made in the larperCord theme builder, starting from orbital.
 // https://rshacudevidro.github.io/larperCord/theme-builder.html
-theme "GitHub Dark" description="Sóbrio, legível e confortável para os olhos." description-en="Restrained, readable and easy on the eyes" author="mealet" license="MIT" preview=glass
+theme "GitHub Dark" description="Sóbrio, legível e confortável para os olhos. Cores do Primer, do GitHub (MIT)." description-en="Restrained, readable and easy on the eyes. Colors from GitHub's Primer (MIT)." author="mealet" license="MIT" preview=glass
 palette "#484f58" "#ff7b72" "#3fb950" "#d29922" "#58a6ff" "#bc8cff" "#39c5cf" "#b1bac4" "#6e7681" "#ffa198" "#56d364" "#e3b341" "#79c0ff" "#d2a8ff" "#56d4dd" "#f0f6fc"
 
 colors mode=dark {

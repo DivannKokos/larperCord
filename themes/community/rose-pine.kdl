@@ -1,7 +1,7 @@
 // rose-pine.kdl: All natural pine, faux fur and a bit of soho vibes
 // Made in the larperCord theme builder, starting from orbital.
 // https://rshacudevidro.github.io/larperCord/theme-builder.html
-theme "Rose Pine" description="Tudo em pinho natural, pele sintética e um toque de vibrações do Soho." description-en="All natural pine, faux fur and a bit of soho vibes" author="mealet" license="MIT" preview=glass
+theme "Rose Pine" description="Tudo em pinho natural, pele sintética e um toque de vibrações do Soho. Cores da paleta Rosé Pine (MIT)." description-en="All natural pine, faux fur and a bit of soho vibes. Colors from the Rosé Pine palette (MIT)." author="mealet" license="MIT" preview=glass
 palette "#26233a" "#eb6f92" "#31748f" "#f6c177" "#9ccfd8" "#c4a7e7" "#ebbcba" "#e0def4" "#6e6a86" "#eb6f92" "#31748f" "#f6c177" "#9ccfd8" "#c4a7e7" "#ebbcba" "#e0def4"
 
 colors mode=dark {
