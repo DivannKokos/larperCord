@@ -4,6 +4,7 @@
 
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
+- Show the game you're running (Settings → Privacy, off by default): your status shows "Playing <game>" with the time played for the games on your list, found by looking at the running programs every 15 seconds, the way the Discord desktop app detects games. It works for games that don't use Rich Presence, like Dota 2 (#36). Add a game from the list of programs running now (with a filter; system and background programs are left out) or by choosing its executable. Each game has a name you can edit, an on/off switch and "Only this file", which also checks the full path. Only games on the list are ever sent; with several running, the first on the list wins, and closing the game clears it. A game running through Wine or Proton shows up by its .exe. When a Rich Presence activity is on too, both go to Discord side by side instead of one replacing the other (the same game from both shows once), at the same pace as Rich Presence. Off, nothing looks at your processes. Japanese follows the new texts; the new Russian texts stay in English for now.
 
 ## 0.6.6
 

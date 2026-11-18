@@ -395,14 +395,30 @@ pub const Gateway = struct {
         defer if (act) |a| alloc.destroy(a);
         if (act != null and !g.presence.known(app)) g.presence.learn(alloc, app, "{\"name\":\"Jogo de Teste\"}", false, "[{\"id\":\"4242\",\"type\":1,\"name\":\"logo\"}]");
         g.presence.set(alloc, app, act);
+        g.notePresence();
+    }
+
+    /// O jogo aberto (core/jogos.zig): o mesmo op 3, com as duas atividades.
+    fn setGame(g: *Gateway, game: ?*rpc_proto.Game) void {
+        defer if (game) |x| alloc.destroy(x);
+        g.presence.setGame(alloc, game);
+        g.notePresence();
+    }
+
+    /// Anota o op 3 que iria para o Discord (o QA confere) e muda a nossa linha.
+    fn notePresence(g: *Gateway) void {
+        g.recordOp3();
+        g.emit(g.presence.meEvent(alloc, me_id, g.my_status));
+    }
+
+    fn recordOp3(g: *Gateway) void {
         var out: std.ArrayList(u8) = .empty;
         defer out.deinit(alloc);
-        conta_net.writeOp3(&out, if (g.my_status == .offline) "invisible" else @tagName(g.my_status), g.conta.custom, g.presence.current) catch return;
+        conta_net.writeOp3(&out, if (g.my_status == .offline) "invisible" else @tagName(g.my_status), g.conta.custom, g.presence.activityList()) catch return;
         const n = @min(out.items.len, sent.presence.len);
         @memcpy(sent.presence[0..n], out.items[0..n]);
         sent.presence_len.store(n, .release);
         _ = sent.presences.fetchAdd(1, .release);
-        g.emit(g.presence.meEvent(alloc, me_id, g.my_status));
     }
 
     /// Pedidos de mensagem e grupo: anota o pedido que iria para o Discord e
@@ -867,9 +883,12 @@ pub const Gateway = struct {
                     @import("fake_conta.zig").saveStatus(ss.status, ss.expires_ms);
                     g.my_status = ss.status;
                     g.status_until = ss.expires_ms;
+                    // O op 3 que o gateway de verdade manda junto, com as atividades de agora.
+                    g.recordOp3();
                     g.emit(.{ .presence_update = .{ .user = me_id, .status = ss.status } });
                 },
                 .set_activity => |sa| g.setActivity(sa.app, sa.activity),
+                .set_game => |sg| g.setGame(sg),
                 .fetch_channel => |id| {
                     _ = sent.fetch_channels.fetchAdd(1, .monotonic);
                     sent.fetch_channel.store(id, .release);

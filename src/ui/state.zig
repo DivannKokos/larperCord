@@ -245,6 +245,8 @@ pub const State = struct {
     muted_channels: std.AutoHashMapUnmanaged(Id, void) = .empty,
     /// Palavras de alerta, filtro, ignorados e modo foco (core/filtros.zig).
     filtros: @import("../core/filtros.zig").Filtros = .{},
+    /// Os jogos do "Jogando …" pelo processo aberto (core/jogos.zig).
+    jogos: @import("../core/jogos.zig").Lista = .{},
     /// Notificações, status personalizado e o resto da conta no Discord.
     conta: @import("../core/conta.zig").State = .{},
     /// Rascunho de cada canal (ui/rascunhos.zig).

@@ -182,6 +182,10 @@ pub const Settings = struct {
     /// Rich Presence: jogos e apps mostram a atividade pelo discord-ipc
     /// (net/rpc_ipc.zig). Desligado, nada escuta.
     rich_presence: bool = false,
+    /// "Jogando …" pelo processo aberto: a lista de jogos (core/jogos.zig) é
+    /// conferida de tempos em tempos (app_presenca.zig). Desligado, nada olha os
+    /// processos. Começa desligado: mostra o que a pessoa tem aberto.
+    show_game: bool = false,
 
     /// Nosso status: 0 online, 1 ausente, 2 não perturbe, 3 invisível.
     /// Reaplicado ao conectar.

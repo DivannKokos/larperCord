@@ -3268,7 +3268,7 @@ const ops_envio = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import
 const ops_limites = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_limites.zig").ops;
 const ops_conta = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_conta.zig").ops;
 const ops_social = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_social.zig").ops;
-const ops_presenca = [_]Op{expect("carrega e mostra a conversa", ready)} ++ (if (@import("builtin").os.tag != .windows) @import("qa_presenca.zig").ops else [_]Op{});
+const ops_presenca = [_]Op{expect("carrega e mostra a conversa", ready)} ++ (if (@import("builtin").os.tag != .windows) @import("qa_presenca.zig").ops else [_]Op{}) ++ @import("qa_presenca.zig").ops_jogo;
 const ops_moderacao = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_moderacao.zig").ops;
 const ops_entrada = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_entrada.zig").ops;
 const ops_proxy = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_proxy.zig").ops;
