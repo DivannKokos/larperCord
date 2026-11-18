@@ -192,6 +192,9 @@ pub fn frame(ctx: *d.Ctx, placed: *std.ArrayList(layout.Placed), previews: []con
     _ = search.releaseIdle(false);
     toast(ctx);
     connectionBanner(ctx);
+    // Lembrete vencido: o aviso fica até alguém mexer (o mascote do canto, desenhado
+    // logo depois, vem por cima dele trazer o bilhete).
+    @import("lembretes.zig").notice(ctx);
     @import("mascote_pet.zig").draw(ctx);
     // Chamada chegando: por cima de tudo, em qualquer tema.
     @import("chamada.zig").overlay(ctx);

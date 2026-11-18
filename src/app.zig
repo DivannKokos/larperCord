@@ -49,6 +49,7 @@ const inbox_core = @import("core/inbox.zig");
 const leitura = @import("core/leitura.zig");
 const saved_ui = @import("ui/saved.zig");
 const app_conjuntos = @import("app_conjuntos.zig");
+const app_lembretes = @import("app_lembretes.zig");
 const msg_cache = @import("net/msg_cache.zig");
 const state_cache = @import("net/state_cache.zig");
 const state_snapshot = @import("core/state_snapshot.zig");
@@ -631,6 +632,7 @@ pub const App = struct {
         // (Por último, lá dentro: as threads de mídia e de vídeo usam o libcurl.)
         app.images.deinit();
         app.st.saved.deinit(app.gpa);
+        app.st.lembretes.deinit(app.gpa);
         app.st.conjuntos.deinit(app.gpa);
         app.store.deinit();
         send_limits.reset();
@@ -846,6 +848,7 @@ pub const App = struct {
         app.st.viewer = null;
         app.st.saved.clear(app.gpa);
         app.st.saved.owner = 0;
+        app_lembretes.reset(app);
         app.plugins.setAccount(0);
         send_limits.reset();
         app.sub_wait.cancel();
@@ -2281,7 +2284,10 @@ pub const App = struct {
                 st.palette.open = false;
                 st.popup = if (st.popup == .saved) .none else .saved;
                 if (st.popup == .none) st.focus_input = true;
+                // Abrindo com lembrete vencido: já na aba dele (é o que o número no botão mostra).
+                if (st.popup == .saved) saved_ui.tab = if (app_lembretes.dueNow(app) > 0) .lembretes else .salvas;
             },
+            .lembrete => |la| app_lembretes.handle(app, la),
             .fetch_mentions => if (app.store.mentions_state != .loading) {
                 app.store.mentions_state = .loading;
                 app.cmd(.fetch_mentions);
@@ -2687,6 +2693,8 @@ pub const App = struct {
     fn onReady(app: *App) void {
         // As salvas desta conta (o QA e os prints começam sem nenhuma).
         saved_ui.load(&app.st.saved, app.gpa, app.store.me, !app.opts.qa and app.opts.shot == null);
+        // E os lembretes (o que venceu com o app fechado avisa logo, atrasado).
+        app_lembretes.load(app);
         app.plugins.setAccount(app.store.me);
         // O status escolhido já foi no IDENTIFY; falta a nossa própria linha, que veio online.
         if (app.st.settings.my_status != 0) if (app.store.users.getPtr(app.store.me)) |me| {
@@ -2743,6 +2751,8 @@ pub const App = struct {
         // A nossa linha com o status escolhido (o retrato não guarda presença).
         if (app.store.users.getPtr(app.store.me)) |me| me.status = @fromBackingInt(@intCast(@min(app.st.settings.my_status, 3)));
         app.cache_opened = true;
+        // Os lembretes já da abertura: o que venceu com o app fechado não espera o READY.
+        app_lembretes.load(app);
         app.firstView();
         return true;
     }
@@ -2999,8 +3009,11 @@ pub const App = struct {
             // O tempo das calls (ui/voice_timer.zig) marca a virada do segundo ou do
             // minuto no relógio: até lá, um sono só.
             const t_wait = now();
-            const nap = anim.napFor(if (due == std.math.maxInt(i64)) null else due -| t_wait, if (anim.clock_wake_ms == std.math.maxInt(i64)) null else anim.clock_wake_ms -| t_wait);
-            due = @min(due, anim.clock_wake_ms);
+            // O próximo lembrete também é hora marcada no relógio: dorme direto até lá,
+            // sem acordar para conferir (app_lembretes.zig).
+            const clock_due = @min(anim.clock_wake_ms, app_lembretes.wakeAt());
+            const nap = anim.napFor(if (due == std.math.maxInt(i64)) null else due -| t_wait, if (clock_due == std.math.maxInt(i64)) null else clock_due -| t_wait);
+            due = @min(due, clock_due);
             const wait = due -| t_wait;
             var got = if (busy or wait <= 0)
                 c.SDL_PollEvent(&e)
@@ -3142,6 +3155,9 @@ pub const App = struct {
                 got = c.SDL_PollEvent(&e);
             }
             if (input) pending = 3;
+            // Venceu um lembrete: o aviso (e, sem ninguém olhando, a notificação). Antes de
+            // olhar se a janela está escondida: na bandeja, a notificação sai assim mesmo.
+            if (app_lembretes.check(app)) pending = @max(pending, 2);
             // "Digitando" vence em segundos: conferir 4 vezes por segundo basta
             // (são todos os canais).
             if (now() - typing_check_ms >= 250) {
@@ -3611,6 +3627,7 @@ pub const App = struct {
             if (e.type == c.SDL_EVENT_QUIT) return false;
         }
         if (input) wl.pending = 3;
+        if (app_lembretes.check(app)) wl.pending = @max(wl.pending, 2);
         const now_ms = now();
         if (now_ms - wl.typing_check_ms >= 250) {
             wl.typing_check_ms = now_ms;

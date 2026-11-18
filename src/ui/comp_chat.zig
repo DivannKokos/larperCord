@@ -259,6 +259,20 @@ fn inboxButtons(ctx: *d.Ctx, dl: *c.ImDrawList, right_x: f32, y: f32) void {
     if (sh.clicked) ctx.act(.toggle_saved);
     const sopen = ctx.st.popup == .saved;
     icons.bookmark(dl, sr.x + 14, sr.y + 14, (if (sopen or sh.hovered) ctx.col(.text) else ctx.col(.muted)).u(), sopen);
+    // Lembretes vencidos (ui/lembretes.zig): o número em cima, e o clique abre a aba deles.
+    const due = @import("lembretes.zig").dueCount(ctx);
+    if (due > 0) {
+        var db: [8]u8 = undefined;
+        const lbl = std.fmt.bufPrint(&db, "{d}", .{@min(due, 99)}) catch "";
+        const font = ctx.ui.get(.bold);
+        const lw = d.width(font, 10.5, lbl);
+        const bw = @max(15, lw + 8);
+        const br: d.Rect = .{ .x = sr.right() - bw + 4, .y = sr.y - 2, .w = bw, .h = 15 };
+        d.rect(dl, br.inset(-2, -2), ctx.col(.surface), 9);
+        d.rect(dl, br, ctx.col(.danger), 7.5);
+        d.text(dl, font, 10.5, br.x + (bw - lw) / 2, br.y + 0.5, d.Rgba.white, lbl);
+        qa.mark(br, "header-saved-badge:{d}", .{due});
+    }
     var skb: [48]u8 = undefined;
     var stb: [160]u8 = undefined;
     d.tip(ctx, sr, i18n.fmt(&stb, "Mensagens salvas  {s}", "Saved messages  {s}", .{teclas.label(&ctx.st.teclas, .salvas, &skb)}), sh.hovered);

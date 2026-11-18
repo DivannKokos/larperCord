@@ -58,6 +58,13 @@ epoch=$(( $(date +%s) * 1000 ))
 QA_TABSETS_READ=1 LARPER_DEMO_EPOCH_MS=$epoch QA_SUITE=cache-a run "retrato (grava)" $bin --qa --theme classico
 QA_KEEP_CACHE=1 QA_TABSETS_READ=1 LARPER_DEMO_EPOCH_MS=$epoch LARPER_DEMO_READY_MS=2500 QA_SUITE=cache-b run "retrato (abre)" $bin --qa --theme classico
 QA_SUITE=mascote run "mascote" $bin --qa --theme classico
+# Lembretes: o relógio adiantado pelo QA, o aviso, o mascote e a notificação; depois dois
+# processos: o que fica gravado volta, e o que venceu com o app fechado avisa atrasado.
+QA_SUITE=lembretes run "lembretes" $bin --qa --theme classico
+# (O mesmo começo da demonstração nos dois: as mensagens têm os mesmos IDs.)
+epoch=$(( $(date +%s) * 1000 ))
+LARPER_DEMO_EPOCH_MS=$epoch QA_SUITE=lembretes-a run "lembretes (antes)" $bin --qa --theme classico
+LARPER_DEMO_EPOCH_MS=$epoch QA_LEMBRETES_READ=1 QA_SUITE=lembretes-b run "lembretes (depois)" $bin --qa --theme classico
 # Apagar todos os dados: pastas de mentira em qa-out/apagar, conferidas de fora depois que
 # o app fecha, e nada apagado fora delas.
 bash tools/qa_apagar.sh "$bin" || total_fail=1

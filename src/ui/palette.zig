@@ -56,6 +56,7 @@ const commands = [_]Command{
     .{ .pt = "Configurações", .en = "Settings", .run = simple(.open_settings) },
     .{ .pt = "Caixa de entrada (menções e não lidas)", .en = "Inbox (mentions and unreads)", .run = simple(.toggle_inbox) },
     .{ .pt = "Mensagens salvas", .en = "Saved messages", .run = simple(.toggle_saved) },
+    .{ .pt = "Lembretes", .en = "Reminders", .run = simple(.{ .lembrete = .toggle_list }) },
     .{ .pt = "Status: Online", .en = "Status: Online", .run = status(.online) },
     .{ .pt = "Status: Ausente", .en = "Status: Idle", .run = status(.idle) },
     .{ .pt = "Status: Não perturbe", .en = "Status: Do Not Disturb", .run = status(.dnd) },

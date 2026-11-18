@@ -91,6 +91,7 @@ Search ignores case and accents, so `nao` finds `não`.
 
 - **Inbox** (`Ctrl+I`): unread DMs and mentions from every server, grouped by channel, with previews, jump to message and "mark all as read". A second tab shows recent mentions from Discord.
 - **Saved messages** (`Ctrl+Shift+S`, or right-click → Save message): up to 500, with a note of up to 1,000 characters. Stored only on your computer, and nothing goes to Discord.
+- **Message reminders** (right-click → Remind Me…): in 20 minutes, 1 hour, 3 hours, tomorrow at 9:00, next week, or a date and time you pick, with an optional note. When one is due, a notice stays on screen until you jump to the message, snooze it 10 minutes or mark it done; the corner mascot brings it, and with the window unfocused or in the tray a desktop notification goes out (not on Do Not Disturb). A reminder that came due with the app closed shows up as overdue when it opens. The Reminders tab next to saved messages lists what's due, what's coming and what's done, with edit and delete. Only on your computer.
 
 ## Layout
 

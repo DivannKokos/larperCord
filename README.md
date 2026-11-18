@@ -121,6 +121,12 @@ The official client is a whole browser dressed up as an app. On the same PC:
 - **Saved messages with notes** (`Ctrl+Shift+S`, right-click → Save message): only on your
   computer, in `~/.config/larpercord/saved-<account>.json` (`%APPDATA%\larpercord\saved-<account>.json`
   on Windows); nothing goes to Discord.
+- **Message reminders** (right-click → Remind Me…): in 20 minutes, 1 hour, 3 hours, tomorrow at
+  9:00, next week or a date and time you pick, with an optional note. When it's due a notice stays
+  on screen (jump, snooze 10 minutes, done), the corner mascot brings it, and with the window
+  unfocused or in the tray a desktop notification goes out (not on Do Not Disturb). One that came
+  due with the app closed shows up when it opens. Only on your computer, in
+  `lembretes-<account>.json` next to the saved messages.
 - **Local cache and offline search.** The last 200 messages seen in each channel stay in
   `~/.cache/larpercord/messages` (`%LOCALAPPDATA%\larpercord\messages` on Windows; 50 MB cap, and on
   Linux folders 700 and files 600): the conversation appears

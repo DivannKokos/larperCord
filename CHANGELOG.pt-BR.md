@@ -2,6 +2,9 @@
 
 ## 0.6.7
 
+**Mensagens**
+- Lembretes de mensagens: botão direito numa mensagem → Me lembrar… e escolha em 20 minutos, em 1 hora, em 3 horas, amanhã às 9:00, semana que vem (a segunda às 9:00) ou a data e hora que quiser, com uma anotação curta opcional. "Amanhã" e "semana que vem" seguem o seu relógio, com horário de verão. Na hora, um aviso fica no canto até você ir para a mensagem, adiar 10 minutos ou concluir; o mascote do canto leva um bilhetinho até ele, e com a janela sem foco ou na bandeja sai uma notificação do sistema, pelo mesmo caminho das DMs e nunca no "Não perturbe". O que venceu com o app fechado aparece como atrasado ao abrir. O painel das mensagens salvas ganhou a aba Lembretes, com o que venceu, o que vem e o que foi concluído, com editar e excluir, e o botão das salvas mostra quantos venceram. O app não fica conferindo de tempo em tempo: dorme até o próximo lembrete. Os lembretes ficam só no seu computador, um arquivo por conta ao lado das mensagens salvas, e "Apagar todos os dados" leva junto. O japonês segue os textos novos; as linhas novas em russo estão em inglês por enquanto.
+
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 

@@ -2,6 +2,9 @@
 
 ## 0.6.7
 
+**Messages**
+- Message reminders: right-click a message → Remind Me… and pick in 20 minutes, in 1 hour, in 3 hours, tomorrow at 9:00, next week (Monday at 9:00) or your own date and time, with an optional short note. "Tomorrow" and "next week" follow your clock across daylight saving time. When a reminder is due, a notice stays in the corner until you jump to the message, snooze it 10 minutes or mark it done; the corner mascot carries a little note to it, and with the window unfocused or in the tray a desktop notification goes out, through the same path as DMs and never on Do Not Disturb. A reminder that came due while the app was closed shows up as overdue when it opens. The saved messages panel has a Reminders tab with what's due, what's coming and what's done, with edit and delete, and the saved button shows how many are due. The app doesn't check on a timer: it sleeps until the next reminder. Reminders stay only on your computer, one file per account next to the saved messages, and "Delete all data" removes them. Japanese follows the new texts; the new Russian lines are in English for now.
+
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
