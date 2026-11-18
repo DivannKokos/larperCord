@@ -5,6 +5,9 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Install**
+- Opening from an app launcher on Wayland (which sets XDG_ACTIVATION_TOKEN to focus the window) no longer crashes on startup. The token is cleared from the environment when the window shows, and the copy of the environment the app kept still pointed at the old, shorter list (#44).
+
 ## 0.6.6
 
 **Appearance**

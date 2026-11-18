@@ -5,6 +5,9 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Instalação**
+- Abrir pelo lançador de apps no Wayland (que define XDG_ACTIVATION_TOKEN para dar o foco à janela) não derruba mais o app na abertura. A ficha é apagada do ambiente quando a janela aparece, e a cópia do ambiente que o app guardava ainda apontava para a lista antiga, mais curta (#44).
+
 ## 0.6.6
 
 **Aparência**
