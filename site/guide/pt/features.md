@@ -91,6 +91,7 @@ A busca ignora maiúsculas e acentos, então `nao` encontra `não`.
 
 - **Caixa de entrada** (`Ctrl+I`): DMs e menções não lidas de todos os servidores, agrupadas por canal, com prévia, ir até a mensagem e "Marcar tudo como lido". Uma segunda aba mostra as menções recentes do Discord.
 - **Mensagens salvas** (`Ctrl+Shift+S`, ou botão direito → Salvar mensagem): até 500, com uma anotação de até 1.000 caracteres. Ficam só no seu computador, e nada vai para o Discord.
+- **Lembretes de mensagens** (botão direito → Me lembrar…): em 20 minutos, 1 hora, 3 horas, amanhã às 9:00, semana que vem, ou na data e hora que você escolher, com uma anotação opcional. Na hora, um aviso fica na tela até você ir para a mensagem, adiar 10 minutos ou concluir; o mascote do canto leva o bilhete, e com a janela sem foco ou na bandeja sai uma notificação do sistema (fora do "Não perturbe"). O que venceu com o app fechado aparece como atrasado ao abrir. A aba Lembretes, ao lado das salvas, mostra o que venceu, o que vem e o que foi concluído, com editar e excluir. Só no seu computador.
 
 ## Layout
 

@@ -1,7 +1,7 @@
 //! Os objetos do mascote do canto (ui/mascote_pet.zig): caneca, livro, videogame,
 //! chiclete, notas do assobio, paninho, vara de pesca, plantinha, mosquinha, blocos,
-//! rabisco, lixeira, borracha, cartinha, barraca com fogueira e o balão de fala. Tudo
-//! desenhado com formas, sem imagem nenhuma: não pesa na memória.
+//! rabisco, lixeira, borracha, cartinha, bilhete do lembrete, barraca com fogueira e o
+//! balão de fala. Tudo desenhado com formas, sem imagem nenhuma: não pesa na memória.
 const std = @import("std");
 const c = @import("c");
 const d = @import("draw.zig");
@@ -284,6 +284,29 @@ pub fn letter(dl: *c.ImDrawList, p: c.ImVec2, s: f32, ang: f32) void {
     line(dl, P.at(p, -w / 2, -h / 2, cs, sn), P.at(p, 0, h * 0.1, cs, sn), Rgba.hex(0xB8B0A2).u(), lw);
     line(dl, P.at(p, w / 2, -h / 2, cs, sn), P.at(p, 0, h * 0.1, cs, sn), Rgba.hex(0xB8B0A2).u(), lw);
     c.ImDrawList_AddCircleFilled(dl, P.at(p, 0, h * 0.12, cs, sn), s * 0.06, Rgba.hex(0xFF4A5A).u(), 0);
+}
+
+/// O bilhete do lembrete: um papelzinho amarelo com três linhas e a ponta dobrada.
+pub fn note(dl: *c.ImDrawList, p: c.ImVec2, s: f32, ang: f32) void {
+    const w = s * 0.5;
+    const h = s * 0.56;
+    quad(dl, p, w, h, ang, Rgba.hex(0xFFE8A3).u());
+    const cs = @cos(ang);
+    const sn = @sin(ang);
+    const P = struct {
+        fn at(ctr: c.ImVec2, x: f32, y: f32, ccs: f32, ssn: f32) c.ImVec2 {
+            return d.v(ctr.x + x * ccs - y * ssn, ctr.y + x * ssn + y * ccs);
+        }
+    };
+    // A ponta de cima à direita, dobrada.
+    const f = s * 0.14;
+    c.ImDrawList_AddTriangleFilled(dl, P.at(p, w / 2 - f, -h / 2, cs, sn), P.at(p, w / 2, -h / 2 + f, cs, sn), P.at(p, w / 2 - f, -h / 2 + f, cs, sn), Rgba.hex(0xE0BE5C).u());
+    const lw = @max(1, s * 0.035);
+    for (0..3) |i| {
+        const y = -h * 0.14 + @as(f32, @floatFromInt(i)) * h * 0.2;
+        const x1 = if (i == 2) w * 0.08 else w * 0.32;
+        line(dl, P.at(p, -w * 0.32, y, cs, sn), P.at(p, x1, y, cs, sn), Rgba.hex(0xB39548).u(), lw);
+    }
 }
 
 /// A barraca do acampamento (o chão em `base`, centro embaixo).

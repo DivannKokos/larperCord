@@ -29,6 +29,8 @@ pub const Popup = union(enum) {
     /// Caixa de entrada (aba 0 = não lidas, 1 = menções) e mensagens salvas.
     inbox: struct { tab: u8 = 0 },
     saved,
+    /// "Me lembrar…" de uma mensagem, ou editar o lembrete `edit` (ui/lembretes.zig).
+    lembrete: struct { message: Id, edit: u32 = 0 },
     /// Mensagens fixadas de um canal.
     pins: struct { channel: Id },
     /// Threads de um canal de texto, ativas ou arquivadas (ui/forum.zig).
@@ -259,6 +261,8 @@ pub const State = struct {
     typing_sent_ms: i64 = 0,
     /// Mensagens salvas da conta (ui/saved.zig lê e grava o arquivo).
     saved: @import("../core/saved.zig").List = .{},
+    /// Lembretes da conta (ui/lembretes.zig lê e grava o arquivo).
+    lembretes: @import("../core/lembretes.zig").List = .{},
     /// Buffers reaproveitados a cada quadro pela lista de mensagens.
     offsets: std.ArrayList(f32) = .empty,
     groups: std.ArrayList(u8) = .empty,

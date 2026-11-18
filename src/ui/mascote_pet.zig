@@ -20,8 +20,9 @@
 //! janela em pulos (senta na última mensagem, sobe na lista de membros, fica pendurado no
 //! cabeçalho, espia por trás da lista de canais). Brinca com a interface (senta no
 //! "digitando…", leva mensagem apagada para o lixo, empurra o botão de voltar ao fim, leva
-//! a cartinha da DM até o ícone), com a setinha do mouse, pula junto quando você troca de
-//! canal, espera com a janela sem foco, acampa quando você some e corre até o mouse na volta.
+//! a cartinha da DM até o ícone e o bilhete do lembrete até o aviso), com a setinha do
+//! mouse, pula junto quando você troca de canal, espera com a janela sem foco, acampa
+//! quando você some e corre até o mouse na volta.
 //!
 //! O que você digita e as brincadeiras (Configurações → Mascote, as contas em
 //! ui/mascote_reacoes.zig): tapa as orelhas com tudo em maiúsculas, os olhos com um
@@ -95,12 +96,12 @@ pub const Act = enum {
 };
 
 /// Para onde ele vai quando sai de casa (`hide`: o esconde-esconde, atrás de um painel).
-pub const Goal = enum { none, home, msg, members, header, channels, typing, jump, dm, cursor, mouse, hide };
+pub const Goal = enum { none, home, msg, members, header, channels, typing, jump, dm, reminder, cursor, mouse, hide };
 
 /// Os lugares da interface aonde ele pode ir (cada componente avisa onde está a cada
 /// quadro; o que não apareceu no quadro, como a lista de membros num tema sem ela, fica
 /// de fora).
-pub const Anchor = enum { members, header, channels, dm_icon, last_msg, typing, jump, input };
+pub const Anchor = enum { members, header, channels, dm_icon, last_msg, typing, jump, input, reminder };
 
 /// Os jeitos de emburrar: encolher, afundar na caixa (só as orelhas de fora), inflar
 /// vermelho soltando fumaça, e virar de costas (espia quando o mouse passa).
@@ -200,6 +201,8 @@ const State = struct {
     pend_edit: bool = false,
     pend_dm: bool = false,
     pend_resize: bool = false,
+    /// Venceu um lembrete (ms; 0 = nada): ele leva o bilhete até o aviso assim que der.
+    pend_reminder: i64 = 0,
     /// Quando ele foi a cada lugar pela última vez (para não ir toda hora).
     trip_ms: i64 = -100_000,
     typing_trip_ms: i64 = -100_000,
@@ -339,6 +342,12 @@ pub fn onMessageEdited() void {
 /// Chegou uma DM: ele leva a cartinha até o ícone das DMs.
 pub fn onDm() void {
     s.pend_dm = true;
+}
+
+/// Venceu um lembrete: ele leva o bilhete até o aviso (ui/lembretes.zig). Com a janela
+/// sem foco, espera ela voltar (até 10 minutos).
+pub fn onReminder(now: i64) void {
+    s.pend_reminder = @max(now, 1);
 }
 
 /// A janela mudou de tamanho: ele se segura (ou cai).
@@ -482,6 +491,11 @@ fn goTo(ctx: *d.Ctx, goal: Goal, now: i64) bool {
             const r = anchorRect(.jump, now) orelse return false;
             break :blk .{ r.x - base_size * 0.36, r.bottom() };
         },
+        .reminder => blk: {
+            // Em cima do aviso do lembrete, perto da ponta direita (os botões ficam embaixo).
+            const r = anchorRect(.reminder, now) orelse return false;
+            break :blk .{ r.right() - 44, r.y + 3 };
+        },
         .dm => blk: {
             // Logo embaixo do ícone das DMs (ui/comp_rail.zig avisa onde ele está, em
             // qualquer formato da barra).
@@ -534,6 +548,7 @@ fn anchorFor(goal: Goal, now: i64) ?d.Rect {
         .jump => anchorRect(.jump, now),
         .dm => anchorRect(.dm_icon, now),
         .hide => anchorRect(s.seek_anchor, now),
+        .reminder => anchorRect(.reminder, now),
         .none, .home, .cursor, .mouse => null,
     };
 }
@@ -546,6 +561,7 @@ fn perchMs(goal: Goal) i64 {
         .typing => 8000,
         .jump => 3500,
         .dm => 900,
+        .reminder => 1800,
         .cursor => 30_000,
         .mouse => 1400,
         .hide => reacoes.seek_hide_ms,
@@ -1273,6 +1289,22 @@ pub fn draw(ctx: *d.Ctx) void {
             s.react = .none;
         }
     }
+    // Venceu um lembrete: foi você quem pediu, então ele acorda (do cochilo, do
+    // acampamento) e leva o bilhete até o aviso. Espera a janela ter foco e o aviso
+    // aparecer; passados 10 minutos, desiste.
+    if (s.pend_reminder != 0) {
+        if (!set.mascot_ui or now - s.pend_reminder > 10 * 60 * 1000) {
+            s.pend_reminder = 0;
+        } else if (focused and s.mode != .grabbed and s.mode != .flying and anchorRect(.reminder, now) != null) {
+            s.pend_reminder = 0;
+            s.nap = false;
+            s.camped = false;
+            s.last_input_ms = now;
+            s.react = .none;
+            s.act = .none;
+            _ = goTo(ctx, .reminder, now);
+        }
+    }
     // Alguém digitando: senta em cima do "digitando…" (não enquanto você mesmo digita).
     if (ui_ok and s.mode == .home and s.act == .none and now - s.typing_trip_ms > 45_000 and now - s.type_ms > 2000 and anchorRect(.typing, now) != null) {
         if (goTo(ctx, .typing, now)) s.typing_trip_ms = now;
@@ -1429,6 +1461,10 @@ pub fn draw(ctx: *d.Ctx) void {
                     done = true;
                 },
                 .jump => if (anchorRect(.jump, now) == null) {
+                    done = true;
+                },
+                // O aviso do lembrete saiu (concluído, adiado): volta em vez de ficar no ar.
+                .reminder => if (anchorRect(.reminder, now) == null) {
                     done = true;
                 },
                 .cursor => if (dist(mouse.x, mouse.y, s.dest[0] - 3, s.dest[1] + 1) > 4) {
@@ -2064,6 +2100,12 @@ pub fn draw(ctx: *d.Ctx) void {
                 pl.face = .happy;
                 if (pt < 0.9) anim_until = @max(anim_until, now + 40);
             },
+            .reminder => {
+                // Entregando o bilhete e olhando para o aviso.
+                pl.face = .happy;
+                pl.look = .{ -0.6, 0.5 };
+                if (pt < 1.0) anim_until = @max(anim_until, now + 40);
+            },
             .cursor => {
                 pl.face = .happy;
                 pl.squash = 0.05;
@@ -2273,6 +2315,17 @@ pub fn draw(ctx: *d.Ctx) void {
             const from = body.p(64, -16);
             const to = d.v(gr.x + gr.w / 2, gr.y + gr.h / 2);
             if (g < 1) props.letter(dl, d.v(from.x + (to.x - from.x) * g, from.y + (to.y - from.y) * g - @sin(std.math.pi * g) * 20), 18 * (1 - g * 0.5), g * 6);
+        };
+    }
+    // O bilhete do lembrete: levando na ida e pondo no aviso (no relógio do canto dele).
+    if (s.goal == .reminder) {
+        if (s.mode == .trip) {
+            props.note(dl, body.p(64, -16), 18, 0.12 * @sin(tsec * 6));
+        } else if (s.mode == .perch) if (anchorRect(.reminder, now)) |nr| {
+            const g = std.math.clamp(secs(now, s.perch_ms) / 0.8, 0, 1);
+            const from = body.p(64, -16);
+            const to = d.v(nr.x + 30, nr.y + 26);
+            if (g < 1) props.note(dl, d.v(from.x + (to.x - from.x) * g, from.y + (to.y - from.y) * g - @sin(std.math.pi * g) * 24), 18 * (1 - g * 0.4), -g * 5);
         };
     }
     effects(dl, now, cx, cy_fx, size, asleep, sleep_from, rt, if (kind == .terminal) terminal.look.eyeCenter(1) else visual.eye_r);
@@ -2794,6 +2847,10 @@ pub fn qaShown(now: i64) bool {
 pub fn qaVeiled(a: Anchor, now: i64) bool {
     return now - veiled_ms[@intFromEnum(a)] < 300;
 }
+/// Um lembrete venceu e ele ainda não saiu com o bilhete.
+pub fn qaReminderPending() bool {
+    return s.pend_reminder != 0;
+}
 pub fn qaGoFailed() bool {
     return s.qa_go_failed;
 }
@@ -2858,6 +2915,7 @@ pub fn qaLifeReset(now: i64) void {
     s.pend_resize = false;
     s.seek_ms = -100_000;
     s.seek_found = false;
+    s.pend_reminder = 0;
 }
 /// Volta para casa na hora (o QA não espera ele voltar andando).
 pub fn qaHome() void {

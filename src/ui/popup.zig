@@ -141,6 +141,7 @@ fn popupKey(p: state.Popup) u64 {
         .onboarding => |t| 24 +% t.guild *% 31,
         .devices => |dv| 25 +% @as(u64, @intFromEnum(dv.which)),
         .tab_set_name => |t| 26 +% (if (t.rename) |i| @as(u64, i) + 1 else 0) *% 31,
+        .lembrete => |t| 27 +% t.message *% 31 +% @as(u64, t.edit) *% 17,
     };
 }
 
@@ -204,6 +205,7 @@ pub fn draw(ctx: *d.Ctx) void {
         .mixer => |m| mixer(ctx, m.x, m.y),
         .inbox => |ib| @import("inbox.zig").draw(ctx, ib.tab),
         .saved => saved_ui.draw(ctx),
+        .lembrete => |t| @import("lembretes.zig").drawEditor(ctx, t.message, t.edit),
         .pins => |x| @import("pins.zig").draw(ctx, x.channel),
         .threads => |t| forum.panel(ctx, t.parent, t.archived, t.private),
         .new_thread => |t| forum.newThread(ctx, t.message),
@@ -373,6 +375,11 @@ fn menu(ctx: *d.Ctx, kind: state.MenuKind, id: Id, x: f32, y: f32) void {
                     add(&items, &n, .{ .label = "Remover dos salvos", .en = "Remove from Saved", .id = 10 })
                 else
                     add(&items, &n, .{ .label = "Salvar mensagem", .en = "Save Message", .id = 10 });
+                // Lembrete: também só neste computador (ui/lembretes.zig).
+                add(&items, &n, if (ctx.st.lembretes.pendingFor(id) != null)
+                    .{ .label = "Editar lembrete…", .en = "Edit Reminder…", .id = 16 }
+                else
+                    .{ .label = "Me lembrar…", .en = "Remind Me…", .id = 16 });
             }
             // Thread: abre a que já existe ou cria uma, se o pai deixa.
             if (found.m.msg.id != 0) {
@@ -760,6 +767,7 @@ fn choose(ctx: *d.Ctx, kind: state.MenuKind, id: Id, item: u8, r: d.Rect) void {
         13 => if (ctx.store.findAny(id)) |f| ctx.act(.{ .pin_message = .{ .channel = f.cs.info.id, .id = id, .add = !f.m.msg.pinned } }),
         8, 25, 44, 63 => copyFmt(ctx, "{d}", .{id}),
         10 => ctx.act(if (st.saved.find(id) != null) .{ .unsave_message = id } else .{ .save_message = id }),
+        16 => @import("lembretes.zig").open(ctx, id),
         11 => forum.openNewThread(ctx, id),
         12 => if (ctx.store.findAny(id)) |f| ctx.act(.{ .select_channel = f.m.msg.thread }),
         47 => if (ctx.store.channel(id)) |cs| if (cs.info.thread) |t| {

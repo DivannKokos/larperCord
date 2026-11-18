@@ -124,6 +124,12 @@ O cliente oficial é um navegador inteiro disfarçado de app. No mesmo PC:
 - **Mensagens salvas com anotação** (`Ctrl+Shift+S`, botão direito → Salvar mensagem): só no seu
   computador, em `~/.config/larpercord/saved-<conta>.json` (`%APPDATA%\larpercord\saved-<conta>.json`
   no Windows); nada vai para o Discord.
+- **Lembretes de mensagens** (botão direito → Me lembrar…): em 20 minutos, 1 hora, 3 horas, amanhã
+  às 9:00, semana que vem ou na data e hora que você escolher, com uma anotação opcional. Na hora,
+  um aviso fica na tela (ir até a mensagem, adiar 10 minutos, concluir), o mascote do canto leva o
+  bilhete, e com a janela sem foco ou na bandeja sai uma notificação do sistema (fora do "Não
+  perturbe"). O que venceu com o app fechado aparece ao abrir. Só no seu computador, em
+  `lembretes-<conta>.json`, ao lado das mensagens salvas.
 - **Cache local e busca offline.** As últimas 200 mensagens vistas de cada canal ficam em
   `~/.cache/larpercord/messages` (`%LOCALAPPDATA%\larpercord\messages` no Windows; teto de 50 MB e, no
   Linux, pastas 700 e arquivos 600): a conversa aparece

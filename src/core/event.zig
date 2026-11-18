@@ -660,6 +660,8 @@ pub const Action = union(enum) {
     unsave_message: Id,
     /// Troca a anotação (texto alocado com o gpa da interface).
     saved_note: struct { id: Id, text: []const u8 },
+    /// Lembretes de mensagens: também só locais (app_lembretes.zig).
+    lembrete: @import("lembretes.zig").Action,
     /// "Cor do servidor": destaque enquanto o servidor está aberto; null limpa.
     set_guild_color: struct { guild: Id, rgb: ?u32 },
     /// Várias contas: troca (desconecta e entra na outra), volta à tela de

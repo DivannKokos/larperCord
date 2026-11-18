@@ -3319,6 +3319,10 @@ const ops_fontes = [_]Op{
     key(c.ImGuiKey_Escape),
 };
 
+const ops_lembretes = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_lembretes.zig").ops;
+const ops_lembretes_a = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_lembretes.zig").ops_a;
+const ops_lembretes_b = [_]Op{expect("carrega e mostra a conversa", ready)} ++ @import("qa_lembretes.zig").ops_b;
+
 /// As baterias que dá para escolher com QA_SUITE (o nome e o roteiro). Um nome que
 /// não está aqui é erro: antes caía na geral sem avisar e o qa.sh dizia que passou.
 const suites = [_]struct { []const u8, []const Op }{
@@ -3384,6 +3388,9 @@ const suites = [_]struct { []const u8, []const Op }{
     .{ "vitrine", &ops_vitrine },
     .{ "plugins-a", &ops_plugins_a },
     .{ "plugins-b", &ops_plugins_b },
+    .{ "lembretes", &ops_lembretes },
+    .{ "lembretes-a", &ops_lembretes_a },
+    .{ "lembretes-b", &ops_lembretes_b },
 };
 
 /// O nome de cada bateria (tools/qa.sh e quem quiser listar: --qa-list).
