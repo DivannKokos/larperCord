@@ -3310,9 +3310,11 @@ fn demoMediaMessages(msgs: []types.Message) !void {
     try set(&msgs[n - 11], klipy_page, .{ .url = try alloc.dupe(u8, "demo:longgif"), .filename = try alloc.dupe(u8, klipy_file), .width = 400, .height = 240, .animated = true, .embed = true, .link = try alloc.dupe(u8, klipy_page) });
     // Anexos de áudio (o player de ui/audio_card.zig; os arquivos saem de
     // ui/audio_demo.zig na hora do play). O MP3 vem sem o tipo: a extensão basta.
-    try set(&msgs[n - 9], pick("a demo nova 🎧", "the new demo 🎧"), .{ .url = try alloc.dupe(u8, "demo:audio:mp3"), .filename = try alloc.dupe(u8, audio_mp3), .size = 12_407 });
-    try set(&msgs[n - 10], "", .{ .url = try alloc.dupe(u8, "demo:audio:wav"), .filename = try alloc.dupe(u8, audio_wav), .size = 132_344, .audio = true });
-    try set(&msgs[n - 12], pick("gravei aqui, escuta", "recorded this, listen"), .{ .url = try alloc.dupe(u8, "demo:audio:ogg"), .filename = try alloc.dupe(u8, audio_ogg), .size = 158_000, .audio = true });
+    // Fora das posições das fotos, do vídeo e do GIF que buildHistory põe em todo
+    // canal (5, 9, 12, 14, 23, 31) e da mensagem com o cartão do link (10).
+    try set(&msgs[n - 15], pick("a demo nova 🎧", "the new demo 🎧"), .{ .url = try alloc.dupe(u8, "demo:audio:mp3"), .filename = try alloc.dupe(u8, audio_mp3), .size = 12_407 });
+    try set(&msgs[n - 19], "", .{ .url = try alloc.dupe(u8, "demo:audio:wav"), .filename = try alloc.dupe(u8, audio_wav), .size = 132_344, .audio = true });
+    try set(&msgs[n - 24], pick("gravei aqui, escuta", "recorded this, listen"), .{ .url = try alloc.dupe(u8, "demo:audio:ogg"), .filename = try alloc.dupe(u8, audio_ogg), .size = 158_000, .audio = true });
     try set(&msgs[n - 13], "", .{ .url = try alloc.dupe(u8, "demo:audio:flac"), .filename = try alloc.dupe(u8, audio_flac), .size = 96_174, .audio = true });
 }
 

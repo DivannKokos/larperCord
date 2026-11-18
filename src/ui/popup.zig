@@ -269,8 +269,8 @@ pub fn floats(ctx: *const d.Ctx, ch: Id) bool {
 
 const id_volume: u8 = 38;
 /// Salvar a mídia clicada e exportar a conversa (ui/exportar.zig).
-const id_save_as: u8 = 16;
-const id_save_downloads: u8 = 17;
+const id_save_as: u8 = 18;
+const id_save_downloads: u8 = 19;
 const id_export: u8 = 55;
 
 /// A DM com essa pessoa, se já existe.
