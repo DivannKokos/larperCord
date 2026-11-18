@@ -243,8 +243,7 @@ pub fn dialog(ctx: *d.Ctx, id: Id) void {
     }
 
     if (t.archived) {
-        _ = d.textClipped(dl, fam.get(.regular), 12.5, r.x + pad, y, ctx.col(.faint), i18n.tr("Está arquivada: salvar também a desarquiva.", "It's archived: saving also unarchives it."), inner);
-        y += 24;
+        y += inbox.wrapFlow(dl, fam.get(.regular), 12.5, r.x + pad, y, inner, i18n.tr("Está arquivada: salvar também a desarquiva.", "It's archived: saving also unarchives it."), ctx.col(.faint), 24);
     }
 
     // Salvar só com mudança e nome válido.

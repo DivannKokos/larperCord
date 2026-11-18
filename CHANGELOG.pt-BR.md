@@ -21,6 +21,8 @@
 
 **Texto em qualquer idioma**
 - Russo: 341 textos que tinham sido traduzidos por máquina (entre a 0.6.2 e a 0.6.6) voltaram para o inglês, como espaço reservado para alguém traduzir; outros 63 estão sendo reescritos no pull request do DivannKokos (#29). Tudo o que pIat0n e DivannKokos traduziram fica. `tools/i18n_strings.py --lang ru --check` diz quantos faltam, e o começo do i18n/ru.kdl explica como mandar uma tradução.
+- Os títulos das páginas Chat e Plugins passam pela tradução, e os textos que os temas desenham (como o "TRIPULAÇÃO" do orbital ou o "SEÇÕES" do editorial) dá para traduzir nos arquivos de idioma (#20).
+- Frases que eram cortadas com "…" em lugares estreitos agora quebram a linha: a coluna Ativos agora vazia, a aba de adicionar amigo, os pedidos de mensagem, as configurações de voz e do cronômetro, o comando do servidor de linguagem e as threads arquivadas (#20).
 
 **Mascote**
 - Status invisível: o mascote do canto agora fica transparente como uma figura só. Antes cada peça ficava transparente sozinha, então as orelhas apareciam através do corpo onde se cobrem e, com chapéu, pareciam um par de óculos. Agora o mascote inteiro, com chapéu e fone, é desenhado de uma vez e some por igual. O clone do Ctrl+C some do mesmo jeito.
@@ -42,6 +44,9 @@
 
 **Instalação**
 - Abrir pelo lançador de apps no Wayland (que define XDG_ACTIVATION_TOKEN para dar o foco à janela) não derruba mais o app na abertura. A ficha é apagada do ambiente quando a janela aparece, e a cópia do ambiente que o app guardava ainda apontava para a lista antiga, mais curta (#44).
+
+**Chamadas**
+- Com o aperte para falar ligado, o "Desligado" da supressão de ruído volta a funcionar: ele tinha o mesmo número da caixa do atalho, logo acima (#35).
 
 ## 0.6.6
 

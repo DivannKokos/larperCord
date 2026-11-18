@@ -21,6 +21,8 @@
 
 **Text in any language**
 - Russian: 341 texts that had been machine-translated (added from 0.6.2 to 0.6.6) are back in English, as placeholders waiting for a person to translate them; 63 more are being rewritten in DivannKokos's pull request (#29). Everything translated by pIat0n and DivannKokos stays. `tools/i18n_strings.py --lang ru --check` says how many are left, and the top of i18n/ru.kdl explains how to send a translation.
+- The Chat and Plugins page titles go through the translation, and the texts the themes draw (like "CREW" in orbital or "SECTIONS" in editorial) can be translated in the language files (#20).
+- Sentences that were cut with "…" in narrow places now wrap: the empty Active Now column, the add friend tab, message requests, the voice and timer settings, the language server command and archived threads (#20).
 
 **Mascot**
 - Invisible status: the corner mascot now fades as one figure. Each part used to fade on its own, so the ears showed through the body where they overlap and, with a hat on, looked like a pair of glasses. Now the whole mascot, hat and headset included, is drawn once and faded together. The Ctrl+C clone fades the same way.
@@ -42,6 +44,9 @@
 
 **Install**
 - Opening from an app launcher on Wayland (which sets XDG_ACTIVATION_TOKEN to focus the window) no longer crashes on startup. The token is cleared from the environment when the window shows, and the copy of the environment the app kept still pointed at the old, shorter list (#44).
+
+**Calls**
+- With push-to-talk on, the Off button of noise suppression works again: it had the same id as the shortcut box above it (#35).
 
 ## 0.6.6
 
