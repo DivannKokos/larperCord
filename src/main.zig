@@ -11,8 +11,9 @@ pub const std_options: std.Options = .{
     // TLS: custava 256 KB em cada thread, inclusive as do SDL e do driver.
     .signal_stack_size = if (builtin.mode == .debug) 1 << 18 else null,
 };
-// Sem símbolos o rastro não diz nada: no build otimizado, só a mensagem.
-pub const panic = if (builtin.mode == .debug) std.debug.FullPanic(std.debug.defaultPanic) else std.debug.simple_panic;
+// Sem símbolos o rastro não diz nada: no build otimizado, só a mensagem. O safe
+// (-Doptimize=safe) fica com o completo: o simple_panic do Zig 0.17 nem compila nele.
+pub const panic = if (builtin.mode == .debug or builtin.mode == .safe) std.debug.FullPanic(std.debug.defaultPanic) else std.debug.simple_panic;
 const builtin_themes = @import("builtin_themes");
 const App = @import("app.zig").App;
 const Options = @import("app.zig").Options;
