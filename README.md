@@ -162,6 +162,9 @@ The official client is a whole browser dressed up as an app. On the same PC:
   as the seek bar, 1×/1.5×/2× speed and small bars that dance while it plays (Opus, MP3 and WAV with
   nothing installed, the rest through FFmpeg); long GIFs play every frame, and a star on any GIF adds it
   to your favorites.
+- **Export and save**: right-click a conversation → Export Conversation… writes it as HTML (one page that opens
+  offline), Markdown or JSON from what's already on your computer, with nothing requested from Discord.
+  Right-click an image, video or file → Save… or Save to Downloads keeps the original file.
 - **Proxy** (HTTP, HTTPS, SOCKS5, SOCKS5h; Tor at `socks5h://127.0.0.1:9050`), with separate fields for
   the address, port, login and password, for media from outside Discord or for everything except voice
   calls, which always connect directly (Settings → Network). The sign-in screen has it too ("Connect

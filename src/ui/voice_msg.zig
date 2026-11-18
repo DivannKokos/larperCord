@@ -96,5 +96,5 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const types.Attachment, r: d.Rec
         player.buscar(ctx, alvo, target, total, 0, wh.clicked or !wh.held);
     } else if (v.mine) player.soltar(key);
     player.teclas(ctx, alvo, v, ctx.hovering(r));
-    if (bh.right or wh.right) if (msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (bh.right or wh.right) if (msg_id != 0) @import("attachments.zig").mediaMenu(ctx, msg_id, a);
 }

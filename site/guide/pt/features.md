@@ -72,6 +72,7 @@ Botões e menus de seleção falam com o bot, com um indicador de carregando e "
 - **Embeds** como cartões: cor, autor, título, descrição em markdown, campos, imagem, miniatura e rodapé.
 - **Vídeo na conversa** para anexos e links diretos `.mp4`/`.webm`, pelo FFmpeg 7, 8 ou 9, que só é carregado no primeiro play. No Linux é o FFmpeg do sistema (distros antigas trazem um mais velho, que é ignorado). No Windows, Configurações → Chat → **Baixar FFmpeg** baixa e instala (cerca de 80 MB, conferidos por SHA-256), ou o app usa as DLLs do FFmpeg que achar ao lado do `larpercord.exe` ou em qualquer pasta do `PATH`. Nos dois sistemas, **Escolher a pasta do FFmpeg…** no mesmo lugar aceita uma versão "shared" do FFmpeg que você já tem, e sem o FFmpeg a página diz o porquê: um `ffmpeg` estático no `PATH`, sem as bibliotecas (é o que o winget, o choco e o gyan.dev instalam), uma versão que o app não usa ou uma biblioteca que não carregou, com o motivo dado pelo sistema. Play e pausa, barra de progresso e som, até 854×480 a cerca de 30 qps. O vídeo fora da tela pausa, e 30 segundos depois tudo é liberado. Sem o FFmpeg, ele abre no navegador.
 - **Modo economia**: imagens, fotos de perfil e anexos só baixam quando você clica.
+- **Salvar no disco**: botão direito numa imagem, GIF, vídeo ou arquivo (ou os botões da tela cheia) → **Salvar…** ou **Salvar em Downloads**. Fica o arquivo original, não a prévia reduzida, com outro nome se já existe um igual.
 
 ## Achando as coisas
 
@@ -92,6 +93,7 @@ A busca ignora maiúsculas e acentos, então `nao` encontra `não`.
 - **Caixa de entrada** (`Ctrl+I`): DMs e menções não lidas de todos os servidores, agrupadas por canal, com prévia, ir até a mensagem e "Marcar tudo como lido". Uma segunda aba mostra as menções recentes do Discord.
 - **Mensagens salvas** (`Ctrl+Shift+S`, ou botão direito → Salvar mensagem): até 500, com uma anotação de até 1.000 caracteres. Ficam só no seu computador, e nada vai para o Discord.
 - **Lembretes de mensagens** (botão direito → Me lembrar…): em 20 minutos, 1 hora, 3 horas, amanhã às 9:00, semana que vem, ou na data e hora que você escolher, com uma anotação opcional. Na hora, um aviso fica na tela até você ir para a mensagem, adiar 10 minutos ou concluir; o mascote do canto leva o bilhete, e com a janela sem foco ou na bandeja sai uma notificação do sistema (fora do "Não perturbe"). O que venceu com o app fechado aparece como atrasado ao abrir. A aba Lembretes, ao lado das salvas, mostra o que venceu, o que vem e o que foi concluído, com editar e excluir. Só no seu computador.
+- **Exportar uma conversa**: botão direito num canal ou numa DM, ou no nome da conversa no cabeçalho → **Exportar conversa…**, em HTML (uma página só, que abre sem internet, com as cores do seu tema), Markdown ou JSON, num período de dias. Só usa o que já está no computador e não pede nada ao Discord; role para cima antes para incluir mensagens mais antigas. A mídia é opcional e só copia arquivos que o app já baixou.
 
 ## Layout
 

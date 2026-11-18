@@ -145,6 +145,19 @@ var vol_dragging = false;
 var audio_tried = false;
 var audio_ok = false;
 
+/// O vídeo inteiro, se é o que está aberto e já terminou de baixar (salvar sem
+/// baixar de novo). Só a thread da interface.
+pub fn originalBytes(url: []const u8, out: *std.ArrayList(u8)) bool {
+    const p = cur orelse return false;
+    if (!std.mem.eql(u8, p.linkSlice(), url)) return false;
+    const sh = p.sh;
+    sh.lock();
+    defer sh.unlock();
+    if (!sh.dl_done or sh.data.items.len == 0) return false;
+    out.appendSlice(alloc, sh.data.items) catch return false;
+    return true;
+}
+
 /// O vídeo `key` está tocando (ou aberto) no lugar da prévia.
 pub fn isActive(key: u64) bool {
     return if (cur) |p| p.key == key else false;
@@ -650,7 +663,11 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, r: d.Rect, alpha: f32, msg_id: u64, 
     const area = d.hit(ctx, ids +% 5, r);
     qa.mark(r, "video", .{});
     if (area.clicked and !failed) setPlaying(p, !p.playing);
-    if (area.right and msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (area.right and msg_id != 0) {
+        // "Salvar…" no menu: o vídeo que está tocando (o link é o arquivo).
+        const link = p.linkSlice();
+        @import("exportar.zig").mediaMenu(ctx, msg_id, .{ .url = link, .name = @import("../core/salvar.zig").lastSegment(link) });
+    }
 
     // Próximo redesenho: o próximo quadro (o decodificador acorda o app
     // quando o anel estava vazio).

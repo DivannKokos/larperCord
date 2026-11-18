@@ -68,6 +68,8 @@ pub const Popup = union(enum) {
     devices: struct { which: DeviceMenu, x: f32, y: f32 },
     /// O nome de um conjunto de abas novo, ou do conjunto `rename` (ui/conjuntos.zig).
     tab_set_name: struct { rename: ?usize = null },
+    /// "Exportar conversa…" (ui/exportar.zig).
+    exportar: struct { channel: Id },
 };
 
 /// Seleção de texto entre mensagens: âncora e cabeça (mensagem + byte).

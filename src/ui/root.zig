@@ -193,6 +193,9 @@ pub fn frame(ctx: *d.Ctx, placed: *std.ArrayList(layout.Placed), previews: []con
     // Fechada há minutos, a busca solta o índice do disco (um teste barato por quadro).
     _ = search.releaseIdle(false);
     toast(ctx);
+    // Exportar conversa e salvar mídia: a resposta do seletor, o andamento e o resultado.
+    @import("exportar.zig").frame(ctx);
+    @import("exportar.zig").cards(ctx);
     connectionBanner(ctx);
     @import("aviso_atualizacao.zig").draw(ctx);
     // Lembrete vencido: o aviso fica até alguém mexer (o mascote do canto, desenhado

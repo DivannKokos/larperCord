@@ -72,6 +72,7 @@ Buttons and select menus talk to the bot, with a loading indicator and "This int
 - **Embeds** as cards: color, author, title, description in markdown, fields, image, thumbnail and footer.
 - **Video in the chat** for attachments and direct `.mp4`/`.webm` links, through FFmpeg 7, 8 or 9, which is only loaded on the first play. On Linux it's your system's FFmpeg (older distros ship an older one, which is ignored). On Windows, Settings → Chat → **Download FFmpeg** downloads and installs it (about 80 MB, checked against a SHA-256), or the app uses FFmpeg DLLs it finds next to `larpercord.exe` or in any `PATH` folder. On both systems, **Choose FFmpeg folder…** in the same place takes a "shared" FFmpeg build you already have, and when FFmpeg isn't found the page says why: a static `ffmpeg` on `PATH` without the libraries (what winget, choco and gyan.dev install), a version the app doesn't use, or a library that didn't load and the system's reason. Play and pause, a progress bar and sound, up to 854×480 at about 30 fps. Off-screen video pauses, and 30 seconds later everything is released. Without FFmpeg, it opens in the browser.
 - **Data saver**: images, avatars and attachments only download when you click.
+- **Save to disk**: right-click an image, GIF, video or file (or use the buttons in the full-screen view) → **Save…** or **Save to Downloads**. It keeps the original file, not the reduced preview, with a new name if one already exists.
 
 ## Finding things
 
@@ -92,6 +93,7 @@ Search ignores case and accents, so `nao` finds `não`.
 - **Inbox** (`Ctrl+I`): unread DMs and mentions from every server, grouped by channel, with previews, jump to message and "mark all as read". A second tab shows recent mentions from Discord.
 - **Saved messages** (`Ctrl+Shift+S`, or right-click → Save message): up to 500, with a note of up to 1,000 characters. Stored only on your computer, and nothing goes to Discord.
 - **Message reminders** (right-click → Remind Me…): in 20 minutes, 1 hour, 3 hours, tomorrow at 9:00, next week, or a date and time you pick, with an optional note. When one is due, a notice stays on screen until you jump to the message, snooze it 10 minutes or mark it done; the corner mascot brings it, and with the window unfocused or in the tray a desktop notification goes out (not on Do Not Disturb). A reminder that came due with the app closed shows up as overdue when it opens. The Reminders tab next to saved messages lists what's due, what's coming and what's done, with edit and delete. Only on your computer.
+- **Export a conversation**: right-click a channel or DM, or the conversation's name in the header → **Export Conversation…**, as HTML (one page that opens offline, in your theme's colors), Markdown or JSON, for a range of days. It only uses what's already on your computer and asks Discord for nothing; scroll up first to include older messages. Media is optional and only copies files the app already downloaded.
 
 ## Layout
 

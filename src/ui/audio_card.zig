@@ -240,7 +240,7 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const types.Attachment, r: d.Rec
     d.text(dl, tf, 12, right - tw, d.centerY(wr, 12), ctx.col(.muted).alpha(alpha), tlabel);
 
     player.teclas(ctx, alvo, v, hovered);
-    if (bh.right or wh.right or sh.right or dh.right) if (msg_id != 0) ctx.popup(.{ .menu = .{ .kind = .message, .id = msg_id, .x = ctx.mouse.x, .y = ctx.mouse.y } });
+    if (bh.right or wh.right or sh.right or dh.right) if (msg_id != 0) @import("attachments.zig").mediaMenu(ctx, msg_id, a);
 }
 
 fn downloadIcon(dl: *c.ImDrawList, cx: f32, cy: f32, col: d.Rgba) void {

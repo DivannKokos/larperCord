@@ -84,7 +84,8 @@ pub fn choose(ctx: *d.Ctx, id: Id, item: u8) void {
 /// Numa thread, o clique também abre (com editar, arquivar e trancar).
 pub fn headerTitle(ctx: *d.Ctx, dl: *c.ImDrawList, ch: *const types.Channel, r: d.Rect) void {
     if (ch.thread == null or ch.guild == 0) {
-        // Só o botão direito (sem a mãozinha: o clique comum não faz nada aqui).
+        // Fora de thread: o botão direito no nome abre o menu da conversa (exportar,
+        // silenciar…). Sem mudar o cursor: o clique comum no nome não faz nada.
         qa.mark(r, "header-title", .{});
         if (ctx.st.popup == .none and ctx.hovering(r) and c.ImGui_IsMouseClicked(1) and c.ImGui_IsWindowHovered(c.ImGuiHoveredFlags_RootAndChildWindows))
             ctx.popup(.{ .menu = .{ .kind = .channel, .id = ch.id, .x = r.x, .y = r.bottom() + 4 } });

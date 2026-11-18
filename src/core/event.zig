@@ -616,6 +616,9 @@ pub const Action = union(enum) {
     logout,
     /// Abre o seletor de arquivos para anexar.
     pick_files,
+    /// "Salvar como" de uma exportação ou de uma mídia (o nome sugerido fica em
+    /// ui/exportar.zig, que recebe a resposta).
+    save_dialog,
     /// Um arquivo só, para a opção de anexo de um comando de bot (ui/interact.zig).
     pick_file,
     remove_upload: usize,
