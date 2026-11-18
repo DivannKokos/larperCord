@@ -51,9 +51,28 @@ const usage =
     \\
 ;
 
+/// O Zig guarda a lista do ambiente que o processo recebeu e só a percorre mais
+/// tarde, na primeira linha de log. Se o SDL (ou o GTK) apagar uma variável antes
+/// disso, como o XDG_ACTIVATION_TOKEN que o lançador manda para dar o foco à janela,
+/// o unsetenv da libc encolhe essa mesma lista no lugar e o Zig lê um nulo no fim:
+/// o app caía ao abrir pelo lançador (#44). Numa cópia só do Zig, o que a libc
+/// apagar depois não mexe (as strings continuam onde estavam).
+fn keepEnvironCopy() void {
+    const Block = std.process.Environ.Block;
+    if (comptime !@hasField(Block, "slice") or @FieldType(Block, "slice") != [:null]const ?[*:0]const u8) return;
+    const t = std.Options.debug_threaded_io orelse return;
+    const all = t.environ.process_environ.block.slice;
+    // Até o primeiro nulo: se alguém já tiver apagado uma, a lista já encolheu.
+    const block = all[0 .. std.mem.indexOfScalar(?[*:0]const u8, all, null) orelse all.len];
+    const copy = std.heap.c_allocator.allocSentinel(?[*:0]const u8, block.len, null) catch return;
+    @memcpy(copy, block);
+    t.environ.process_environ.block = .{ .slice = copy };
+}
+
 pub fn main(init: std.process.Init.Minimal) !void {
     // Antes de qualquer thread (platform/mem_tune.zig).
     @import("platform/mem_tune.zig").init();
+    keepEnvironCopy();
     sys.init();
     var opts: Options = .{};
     var restarted = false;
