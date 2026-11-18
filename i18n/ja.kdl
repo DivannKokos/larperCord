@@ -2104,7 +2104,6 @@
 "What's on your mind?" "今の気分は？"
 "When a friend starts an activity, it'll show up here." "フレンドのアクティビティはここに表示されます。"
 "When a new version is found, it downloads and installs in the background; it opens the next time the app starts. Only versions with the right signature go in." "新しいバージョンが見つかると、バックグラウンドでダウンロードしてインストールし、次にアプリを起動したときに反映されます。正しい署名のあるバージョンだけが入ります。"
-"When a friend starts an activity," "フレンドのアクティビティは"
 "When a game from the list is running, your status shows \"Playing …\" with the time played, like the Discord desktop app. Works for games without Rich Presence. Off: nothing looks at your processes." "リストのゲームが起動していると、Discordデスクトップアプリと同様に、ステータスに「プレイ中 …」とプレイ時間が表示されます。Rich Presence非対応のゲームにも使えます。オフの場合、プロセスは一切確認しません。"
 "when inside when" "when の中に when があります"
 "When off, links are only underlined on hover." "オフの場合、リンクはホバー時のみ下線が付きます。"
