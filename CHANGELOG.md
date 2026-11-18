@@ -3,9 +3,12 @@
 ## 0.6.7
 
 **Network and privacy**
-- The connection now looks like the Chrome it already claimed to be. The app sent Chrome's headers but connected the way OpenSSL does by default, so its connection fingerprint (JA4) said otherwise. Now the TLS handshake carries the same ciphers, groups, signatures and extensions as Chrome 156, with the same JA4. On Linux, the release binary also speaks HTTP/2 with Chrome's settings and accepts br and zstd, where it used to fall back to HTTP/1.1. Windows: still pending (the official curl build there keeps its own OpenSSL inside).
+- The connection now looks like the Chrome it already claimed to be. The app sent Chrome's headers but connected the way OpenSSL does by default, so its connection fingerprint (JA4) said otherwise. Now the TLS handshake carries the same ciphers, groups, signatures and extensions as Chrome 156, with the same JA4. On Linux, the release binary also speaks HTTP/2 with Chrome's settings and accepts br and zstd, where it used to fall back to HTTP/1.1. On Windows too (below).
 - With the debug log on (Settings → Advanced), each request to Discord's API (method, path and status) and each gateway op that goes out (its number and server) is written down, with no token or content, to see what the app sent if the account ever gets flagged again.
 - `--tls-fingerprint` prints the app's TLS and HTTP/2 fingerprint, as a site that echoes it back sees it, and tools/tls_check.sh compares it with Chrome's. Neither uses a token.
+
+**Install**
+- Windows is now a single `larpercord.exe`, with SDL3, curl and OpenSSL inside: the official curl DLL keeps its own OpenSSL, out of the app's reach, so the connection could only look like Chrome's with them built together. The zip went from 11.4 to 9.6 MB. The three DLLs stay in the release so older versions can still update themselves; the new `.exe` doesn't load the ones left in the folder, and `install.ps1` removes them.
 
 ## 0.6.6
 

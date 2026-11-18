@@ -23,7 +23,8 @@ jobs:
           zig build test -Dcpu=baseline
           for arch in 0 1 2; do LARPER_RNNOISE_ARCH=$arch zig build ruido-custo -Dcpu=baseline; done
 
-  # O build para Windows sai do Linux (as bibliotecas vêm de tools/windows_deps.sh).
+  # O build para Windows sai do Linux: o .exe único das releases (tools/windows_deps.sh e
+  # tools/windows_static_deps.sh), e o com DLLs, que é o padrão de quem compila.
   windows:
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +33,14 @@ jobs:
         with:
           version: 0.17.0
       - run: tools/windows_deps.sh
-      - run: zig build -Dtarget=x86_64-windows-gnu -Dqa=true
+      - run: zig build -Dtarget=x86_64-windows-gnu -Dqa=true -p out/dlls
+      # O OpenSSL, o curl e companhia compilados para o .exe único: só mudam com o script.
+      - uses: actions/cache@v4
+        with:
+          path: .deps/windows-static
+          key: windows-static-${{ hashFiles('tools/windows_static_deps.sh', 'tools/curl-chrome-h2.patch', 'tools/brotlienc_stub.c') }}
+      - run: test -f .deps/windows-static/lib/libcurl.a || tools/windows_static_deps.sh
+      - run: zig build -Dtarget=x86_64-windows-gnu -Dsingle-exe=true -Dqa=true
       - uses: actions/upload-artifact@v4
         with:
           name: windows-qa-build
