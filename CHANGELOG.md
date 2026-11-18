@@ -54,6 +54,11 @@
 - With push-to-talk on, the Off button of noise suppression works again: it had the same id as the shortcut box above it (#35).
 - Record audio from the message box: the microphone button next to the options (or Ctrl+Shift+R, changeable in Settings → Keybinds) records with the microphone chosen in Settings → Voice, with its volume and noise suppression. While it records, a bar takes the place of the box with the time and the live level; Send (Enter) sends it and Cancel (Esc) throws it away. It goes as a regular .ogg file (Opus, mono, 32 kbit/s, about 240 KB per minute), the same way as any attached file and replying if the box is replying, and the text you were typing stays in the box. Up to 10 minutes, with a warning in the last 30 seconds. It doesn't record during a call or where you can't attach files (the button says why), and Settings → Chat → Record audio button hides it.
 
+**Media and GIFs**
+- Audio files sent in chat (.mp3, .ogg, .wav, .flac, .m4a…) now play right in the conversation instead of only downloading. The player shows the waveform of the whole file as its seek bar (the part already played in the theme's accent color; click or drag to jump, hover to see the time at that point), the current and total time, the file name and size, a speed button (1×, 1.5×, 2×) and a download button. With the mouse over it, Space plays or pauses and ← → skip 5 seconds (when no text box has focus). Spoiler and sensitive covers still hide it until clicked.
+- Ogg Opus, MP3 and WAV/AIFF play with no extra install: MP3 and WAV through dr_mp3 and dr_wav (from dr_libs, public domain), built into the app. FLAC, Ogg Vorbis, AAC/M4A and others play through FFmpeg when it's installed (the same one videos use); without it they stay a file card that says so. Files up to 32 MB. The sound goes to the output device and volume chosen in Settings → Voice, one audio at a time, and it stops when you leave that conversation or the window goes to the tray.
+- While audio or a voice message plays, small bars dance to the sound: next to the file name, and around the play button of voice messages. They only move while playing, with the window focused and without "Reduce motion"; otherwise only the progress bar moves, and paused nothing is redrawn. Settings → Chat → Audio visualizer turns them off.
+
 ## 0.6.6
 
 **Appearance**

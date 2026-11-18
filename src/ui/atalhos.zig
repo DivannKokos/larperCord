@@ -55,6 +55,8 @@ pub const lista = [_]Atalho{
     .{ .grupo = .geral, .pt = "Caixa de entrada", .en = "Inbox", .teclas = "Ctrl+I", .acao = .caixa_entrada },
     .{ .grupo = .geral, .pt = "Mensagens salvas", .en = "Saved messages", .teclas = "Ctrl+Shift+S", .acao = .salvas },
     .{ .grupo = .geral, .pt = "Copiar o texto selecionado nas mensagens", .en = "Copy the text selected in messages", .teclas = "Ctrl+C" },
+    .{ .grupo = .geral, .pt = "Tocar ou pausar o áudio sob o mouse", .en = "Play or pause the audio under the mouse", .teclas = "Space", .teclas_pt = "Espaço" },
+    .{ .grupo = .geral, .pt = "Voltar ou avançar 5 s no áudio sob o mouse", .en = "Skip back or forward 5 s in the audio under the mouse", .teclas = "← / →" },
     .{ .grupo = .janela, .pt = "Próximo tema", .en = "Next theme", .teclas = "F2 / Ctrl+T", .acao = .proximo_tema },
     .{ .grupo = .janela, .pt = "Tema anterior", .en = "Previous theme", .teclas = "Shift+F2 / Ctrl+Shift+T", .acao = .tema_anterior },
     .{ .grupo = .janela, .pt = "Aumentar ou diminuir a interface", .en = "Make the interface bigger or smaller", .teclas = "Ctrl + / Ctrl -" },

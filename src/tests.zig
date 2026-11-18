@@ -55,6 +55,10 @@ test {
     _ = @import("core/ogg_opus.zig");
     _ = @import("core/ogg_escrita.zig");
     _ = @import("core/gravacao.zig");
+    _ = @import("core/audio_formato.zig");
+    _ = @import("core/audio_onda.zig");
+    _ = @import("core/audio_bandas.zig");
+    _ = @import("core/audio_pcm.zig");
     _ = @import("core/stickers.zig");
     _ = @import("core/reply_preview.zig");
     _ = @import("core/search_query.zig");

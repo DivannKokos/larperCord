@@ -156,6 +156,7 @@ fn dupeAttachments(list: []const types.Attachment) ![]const types.Attachment {
             .voice = a.voice,
             .voice_ms = a.voice_ms,
             .wave = a.wave,
+            .audio = a.audio,
         };
         out[n].filename = alloc.dupe(u8, a.filename) catch |e| {
             alloc.free(out[n].url);

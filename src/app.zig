@@ -250,6 +250,9 @@ pub const App = struct {
     msg_sound: aviso.Som = .{},
     /// O QA quer o portão dos quadros valendo (não vai ler os pixels nesse trecho).
     qa_real_gate: bool = false,
+    /// O QA mede a CPU (qa_midia.zig): o laço dorme como no uso normal, só acordando
+    /// também 4 vezes por segundo para o robô conferir.
+    qa_sleep: bool = false,
     /// A lista de membros do canal aberto (op 14): sai na hora depois de uma
     /// pausa, ou espera a escolha parar numa rajada de trocas.
     sub_wait: Debounce(SubReq) = .{},
@@ -423,6 +426,15 @@ pub const App = struct {
         return app;
     }
 
+    /// O áudio tocando continua? Só com a conversa dele na tela e a mensagem ainda
+    /// carregada (rolou para muito longe, ela sai da memória e o áudio para).
+    fn audioPerto(app: *App) bool {
+        const em = @import("ui/audio_player.zig").tocandoEm() orelse return true;
+        if (app.st.activeChannel() != em.canal) return false;
+        const cs = app.store.channel(em.canal) orelse return false;
+        return app.store.find(cs, em.msg) != null;
+    }
+
     /// Fechou a janela e ela deve ficar na bandeja? O app segue conectado e
     /// avisando, sem desenhar. Falso: sem bandeja, ou opção desligada; aí fechar
     /// sai de verdade, nunca fica um processo invisível sem caminho de volta.
@@ -439,6 +451,7 @@ pub const App = struct {
         app.st.window_focused = false;
         voz_audio.setPageOpen(false);
         @import("ui/video.zig").pause();
+        @import("ui/audio_player.zig").pause();
         // Aperte para falar: a tecla solta fora da janela não chegaria aqui.
         var lost = std.mem.zeroes(c.SDL_Event);
         lost.type = c.SDL_EVENT_WINDOW_FOCUS_LOST;
@@ -3092,11 +3105,12 @@ pub const App = struct {
             }
             // Com o mouse andando, a animação de destaque também espera o limite dele:
             // é o que mais pede quadro, e só volta ao ritmo da tela quando o mouse para.
-            const busy = pending > 0 or (anim.active and !mouse.wanted()) or app.opts.shot != null or app.opts.qa or bench or
+            const busy = pending > 0 or (anim.active and !mouse.wanted()) or app.opts.shot != null or (app.opts.qa and !app.qa_sleep) or bench or
                 (login_anim and !app.st.settings.reduce_motion) or app_flutuante.ocupada(app);
             // Dorme até o próximo quadro de um GIF, de uma animação lenta ou
             // do redesenho adiado da rede (o que vier primeiro).
             var due = @min(@min(app.images.next_frame_ms, anim.next_wake_ms), app.sub_wait.due());
+            if (app.qa_sleep) due = @min(due, last_frame_ms + 250);
             if (bg_dirty) due = @min(due, last_frame_ms + bg_frame_ms);
             if (mouse.wanted()) due = @min(due, last_frame_ms + ritmo.MousePace.interval_ms);
             // O tempo das calls (ui/voice_timer.zig) marca a virada do segundo ou do
@@ -3544,6 +3558,8 @@ pub const App = struct {
             }
             // Vídeo que não foi desenhado neste quadro pausa.
             @import("ui/video.zig").endFrame(now());
+            // Áudio cuja conversa saiu da tela também.
+            @import("ui/audio_player.zig").endFrame(now(), app.audioPerto());
             const tr0 = c.SDL_GetTicksNS();
             c.ImGui_Render();
             if (app.opts.stats) prof_render += (c.SDL_GetTicksNS() - tr0) / 1000;
@@ -3892,6 +3908,7 @@ pub const App = struct {
             })) |r| wl.login_result = r;
         }
         @import("ui/video.zig").endFrame(now());
+        @import("ui/audio_player.zig").endFrame(now(), app.audioPerto());
         c.ImGui_Render();
 
         const r = app.win.renderer;

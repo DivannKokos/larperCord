@@ -161,6 +161,9 @@ pub const Settings = struct {
     record_audio: bool = true,
     /// Canal com não lidas abre na primeira delas, como no Discord (senão, no fim).
     open_at_unread: bool = true,
+    /// As barrinhas que acompanham o som enquanto um áudio da conversa toca
+    /// (ui/audio_player.zig). Desligado, só a barra de progresso anda (menos quadros).
+    audio_visualizer: bool = true,
     /// Pasta com as bibliotecas do FFmpeg escolhida à mão (vazia = procurar sozinho;
     /// platform/ffmpeg.zig). Só entra uma pasta conferida.
     ffmpeg_dir: Text = .{},

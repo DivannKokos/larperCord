@@ -13,6 +13,7 @@ const i18n = @import("i18n.zig");
 const video = @import("video.zig");
 const cover = @import("media_cover.zig");
 const voice_msg = @import("voice_msg.zig");
+const audio_card = @import("audio_card.zig");
 const media_refresh = @import("../core/media_refresh.zig");
 const gif_fav = @import("gif_fav.zig");
 
@@ -43,24 +44,25 @@ fn fileWidth(avail: f32) f32 {
     return @min(avail, 400);
 }
 
-/// Altura do bloco de anexos, contando o espaço acima dele.
-pub fn blockHeight(list: []const Attachment, avail: f32, has_text: bool) f32 {
+/// Altura do bloco de anexos, contando o espaço acima dele. `msg_id`: os anexos
+/// de áudio que já se sabe que não tocam aqui voltam a ser cartão de arquivo.
+pub fn blockHeight(list: []const Attachment, avail: f32, has_text: bool, msg_id: types.Id) f32 {
     var h: f32 = if (has_text) gap else 2;
     var n: usize = 0;
-    for (list) |*a| {
+    for (list, 0..) |*a, i| {
         if (!shown(a)) continue;
         if (n > 0) h += gap;
         n += 1;
-        h += if (a.isImage()) imageSize(a, avail)[1] else file_h;
+        h += if (a.isImage()) imageSize(a, avail)[1] else if (audio_card.mostra(a, msg_id, i)) audio_card.altura else file_h;
     }
     return if (n == 0) 0 else h;
 }
 
 /// Largura mais larga do bloco (para o balão do tema de bolhas).
-pub fn blockWidth(list: []const Attachment, avail: f32) f32 {
+pub fn blockWidth(list: []const Attachment, avail: f32, msg_id: types.Id) f32 {
     var w: f32 = 0;
-    for (list) |*a| if (shown(a)) {
-        w = @max(w, if (a.isImage()) imageSize(a, avail)[0] else fileWidth(avail));
+    for (list, 0..) |*a, i| if (shown(a)) {
+        w = @max(w, if (a.isImage()) imageSize(a, avail)[0] else if (audio_card.mostra(a, msg_id, i)) audio_card.largura(avail) else fileWidth(avail));
     };
     return w;
 }
@@ -78,24 +80,29 @@ pub fn draw(ctx: *d.Ctx, dl: *c.ImDrawList, m: *const StoredMessage, x: f32, y_i
     if (list.len == 0) return;
     var y = y_in + (if (m.msg.content.len > 0) gap else 2);
     const scale = ctx.io.*.DisplayFramebufferScale.x;
+    // Um áudio que passou a tocar ou a não tocar aqui muda de altura: mede de novo.
+    audio_card.vigiar(ctx);
     var shown_n: usize = 0;
     for (list, 0..) |*a, i| {
         if (!shown(a)) continue;
         if (shown_n > 0) y += gap;
         shown_n += 1;
         const hid: usize = @truncate(m.msg.id ^ (0xA77A_C400 + i) ^ m.msg.nonce);
+        const audio = !a.isImage() and audio_card.mostra(a, m.msg.id, i);
         const r: d.Rect = if (a.isImage()) blk: {
             const sz = imageSize(a, avail);
             break :blk .{ .x = x, .y = y, .w = sz[0], .h = sz[1] };
-        } else .{ .x = x, .y = y, .w = fileWidth(avail), .h = file_h };
+        } else if (audio) .{ .x = x, .y = y, .w = audio_card.largura(avail), .h = audio_card.altura } else .{ .x = x, .y = y, .w = fileWidth(avail), .h = file_h };
         // Spoiler e sensível: a capa no lugar (nada é baixado até o clique).
         if (cover.hidden(ctx, m.msg.id, a.spoiler, a.sensitive)) |k| {
             cover.draw(ctx, dl, r, k, hid, m.msg.id, alpha);
         } else if (a.isImage()) {
             image(ctx, dl, a, r, scale, alpha, hid, m.msg.id, i, gif_fav.keyOf(m.msg.content, a));
         } else if (a.voice) {
-            voice_msg.draw(ctx, dl, a, r, m.msg.id, i, alpha);
-        } else fileCard(ctx, dl, a, r, alpha, hid);
+            voice_msg.draw(ctx, dl, a, r, m.msg.id, m.msg.channel, i, alpha);
+        } else if (audio) {
+            audio_card.draw(ctx, dl, a, r, m.msg.id, m.msg.channel, i, alpha);
+        } else fileCard(ctx, dl, a, r, alpha, hid, audio_card.aviso(a, m.msg.id, i), m.msg.id);
         markVisible(r, m.msg.id, i);
         y += r.h;
     }
@@ -229,7 +236,8 @@ pub fn savedPlaceholder(ctx: *d.Ctx, dl: *c.ImDrawList, r: d.Rect, size: u64, al
     if (tw < r.w - 8) d.text(dl, f, 13, r.x + (r.w - tw) / 2, r.y + r.h / 2 + 8, ctx.col(.muted).alpha(alpha), msg);
 }
 
-fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alpha: f32, hid: usize) void {
+/// `aviso`: um áudio que não toca aqui diz por quê, ao lado do tamanho.
+fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alpha: f32, hid: usize, aviso: ?[]const u8, msg_id: types.Id) void {
     const hb = d.hit(ctx, hid, r);
     const radius = @max(ctx.th.radius, 6);
     d.rect(dl, r, ctx.col(.elevated).mix(ctx.col(.text), if (hb.hovered) 0.04 else 0).alpha(alpha), radius);
@@ -238,7 +246,11 @@ fn fileCard(ctx: *d.Ctx, dl: *c.ImDrawList, a: *const Attachment, r: d.Rect, alp
     const fam = ctx.ui;
     _ = d.textClipped(dl, fam.get(.semibold), 14, r.x + 50, r.y + 11, ctx.col(.link).alpha(alpha), a.filename, r.w - 64);
     var buf: [32]u8 = undefined;
-    d.text(dl, fam.get(.regular), 12, r.x + 50, r.y + 31, ctx.col(.faint).alpha(alpha), if (a.size > 0) formatSize(&buf, a.size) else i18n.tr("arquivo", "file"));
+    var lb: [128]u8 = undefined;
+    const size_txt = if (a.size > 0) formatSize(&buf, a.size) else i18n.tr("arquivo", "file");
+    const line = if (aviso) |why| std.fmt.bufPrint(&lb, "{s} · {s}", .{ size_txt, why }) catch size_txt else size_txt;
+    _ = d.textClipped(dl, fam.get(.regular), 12, r.x + 50, r.y + 31, ctx.col(.faint).alpha(alpha), line, r.w - 64);
+    if (aviso != null) qa.mark(r, "audio-fallback:{d}", .{msg_id});
     if (hb.hovered) d.tip(ctx, r, i18n.tr("Abrir no navegador", "Open in Browser"), true);
     const res = &media_refresh.global;
     if (hb.clicked) {
