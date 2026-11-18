@@ -59,6 +59,9 @@
 - Ogg Opus, MP3 and WAV/AIFF play with no extra install: MP3 and WAV through dr_mp3 and dr_wav (from dr_libs, public domain), built into the app. FLAC, Ogg Vorbis, AAC/M4A and others play through FFmpeg when it's installed (the same one videos use); without it they stay a file card that says so. Files up to 32 MB. The sound goes to the output device and volume chosen in Settings → Voice, one audio at a time, and it stops when you leave that conversation or the window goes to the tray.
 - While audio or a voice message plays, small bars dance to the sound: next to the file name, and around the play button of voice messages. They only move while playing, with the window focused and without "Reduce motion"; otherwise only the progress bar moves, and paused nothing is redrawn. Settings → Chat → Audio visualizer turns them off.
 
+**Keybinds**
+- Ctrl+R restarts larperCord, like the button in Settings → Updates, and can be changed in Settings → Keybinds. By ErnstBecker (#42).
+
 ## 0.6.6
 
 **Appearance**

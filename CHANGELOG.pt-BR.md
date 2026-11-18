@@ -59,6 +59,9 @@
 - Ogg Opus, MP3 e WAV/AIFF tocam sem instalar nada: MP3 e WAV pelo dr_mp3 e dr_wav (do dr_libs, domínio público), embutidos no app. FLAC, Ogg Vorbis, AAC/M4A e outros tocam pelo FFmpeg quando ele está instalado (o mesmo dos vídeos); sem ele, ficam como cartão de arquivo, avisando. Arquivos de até 32 MB. O som vai para o dispositivo de saída e o volume escolhidos em Configurações → Voz, um áudio por vez, e para quando você sai da conversa ou a janela vai para a bandeja.
 - Enquanto um áudio ou uma mensagem de voz toca, barrinhas dançam com o som: ao lado do nome do arquivo e em volta do botão de tocar das mensagens de voz. Elas só andam tocando, com a janela em foco e sem "Reduzir movimento"; fora isso, só a barra de progresso anda, e pausado nada é redesenhado. Configurações → Chat → Visualizador de áudio desliga.
 
+**Atalhos de teclado**
+- Ctrl+R reinicia o larperCord, como o botão em Configurações → Atualizações, e dá para trocar em Configurações → Atalhos de teclado. De ErnstBecker (#42).
+
 ## 0.6.6
 
 **Aparência**
