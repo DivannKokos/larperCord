@@ -443,13 +443,16 @@ def collect(files):
 
 
 THEMES = ROOT / "themes"
-THEME_EN = re.compile(r'\b(?:description|label)-en="((?:[^"\\]|\\.)*)"')
+# description-en e label-en (o tema e as opções), e o en= / text-en= dos textos
+# desenhados (span "TRIPULAÇÃO" en="CREW"), que src/ui/display_text.zig procura igual.
+THEME_EN = re.compile(r'(?<![\w-])(?:(?:description|label|text)-)?en="((?:[^"\\]|\\.)*)"')
 
 
 def theme_uses():
     """Os textos em inglês dos temas embutidos (themes/builtin.zig): a descrição do
-    tema e o nome e a descrição de cada opção. O app procura esse inglês nas tabelas
-    (themeText em src/ui/settings.zig). Temas da comunidade ficam só em pt/en."""
+    tema, o nome e a descrição de cada opção e os textos desenhados. O app procura esse
+    inglês nas tabelas (themeText em src/ui/settings.zig, display_text.zig). Temas da
+    comunidade ficam só em pt/en."""
     names = re.findall(r'@embedFile\("([^"]+\.kdl)"\)', (THEMES / "builtin.zig").read_text(encoding="utf-8"))
     uses = []
     for name in names:

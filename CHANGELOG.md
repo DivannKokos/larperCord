@@ -5,6 +5,13 @@
 **Presence**
 - Album art in the "Listening to Spotify" activity: the big image of the activity ("spotify:<id>") now comes from Spotify's CDN (i.scdn.co), like the official app downloads. A malformed id keeps the card without the image. When a proxy is configured, the art goes through it, like all outside media.
 
+**Calls**
+- With push-to-talk on, the Off button of noise suppression works again: it had the same id as the shortcut box above it (#35).
+
+**Text in any language**
+- The Chat and Plugins page titles go through the translation, and the texts the themes draw (like "CREW" in orbital or "SECTIONS" in editorial) can be translated in the language files (#20).
+- Sentences that were cut with "…" in narrow places now wrap: the empty Active Now column, the add friend tab, message requests, the voice and timer settings, the language server command and archived threads (#20).
+
 ## 0.6.6
 
 **Appearance**

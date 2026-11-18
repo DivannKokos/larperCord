@@ -10,6 +10,7 @@ const qa = @import("qa.zig");
 const anim = @import("anim.zig");
 const icons = @import("icons.zig");
 const i18n = @import("i18n.zig");
+const inbox = @import("inbox.zig");
 const S = @import("settings_state.zig");
 const voz = @import("../core/voz.zig");
 const sons = @import("../core/sons.zig");
@@ -297,8 +298,7 @@ fn picker(p: anytype, x: f32, wd: f32, y0: f32, which: u8, label: []const u8, co
     // O escolhido não está ligado agora: o nome fica guardado para quando voltar.
     if (fallback and saved.len > 0) {
         qa.mark(.{ .x = x, .y = y, .w = wd, .h = 22 }, tag ++ "-sumiu", .{});
-        _ = d.textClipped(p.dl, p.font(.regular), 13, x, y, ctx.col(.idle), i18n.tr("Não encontrado: usando o padrão até ele voltar.", "Not found: using the default until it comes back."), wd);
-        y += 22;
+        y += inbox.wrapFlow(p.dl, p.font(.regular), 13, x, y, wd, i18n.tr("Não encontrado: usando o padrão até ele voltar.", "Not found: using the default until it comes back."), ctx.col(.idle), 22);
     }
     y += 6;
     const row_h: f32 = 34;
@@ -418,7 +418,9 @@ fn pushToTalk(p: anytype, key: *S.Text) void {
     d.text(p.dl, p.font(.bold), 12, p.x, p.y, ctx.col(.muted), i18n.tr("ATALHO", "SHORTCUT"));
     p.y += 20;
     const r: d.Rect = .{ .x = p.x, .y = p.y, .w = p.w, .h = 42 };
-    const hb = d.hit(ctx, base_id + 30, r);
+    // 30 e 31 são os botões do supressor de ruído, logo abaixo: com o mesmo número, o
+    // "Desligado" não respondia enquanto o atalho estava na tela (#35).
+    const hb = d.hit(ctx, base_id + 50, r);
     qa.mark(r, "voz-atalho", .{});
     if (hb.clicked) {
         if (capturing) voz_audio.cancelCapture() else voz_audio.startCapture();
@@ -510,6 +512,5 @@ fn micTest(p: anytype) void {
     // O rótulo em português é a marca do QA.
     if (p.button(if (on) i18n.tr("Parar teste", "Stop test") else i18n.tr("Testar microfone", "Test microphone"), on)) sh.test_on.store(!on, .release);
     p.y += 2;
-    _ = d.textClipped(p.dl, p.font(.regular), 13, p.x, p.y, ctx.col(.faint), i18n.tr("Toca de volta o que você fala, com os filtros. Use fones para não dar microfonia.", "Plays back what you say, with the filters. Use headphones to avoid feedback."), p.w);
-    p.y += 26;
+    p.y += inbox.wrapFlow(p.dl, p.font(.regular), 13, p.x, p.y, p.w, i18n.tr("Toca de volta o que você fala, com os filtros. Use fones para não dar microfonia.", "Plays back what you say, with the filters. Use headphones to avoid feedback."), ctx.col(.faint), 26);
 }

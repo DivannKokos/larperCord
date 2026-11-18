@@ -5,6 +5,13 @@
 **Presença**
 - A capa do "Ouvindo Spotify": a imagem grande da atividade ("spotify:<id>") vem da CDN do Spotify (i.scdn.co), como o app oficial baixa. Um id furado deixa o cartão sem a imagem. Com proxy configurado, a capa passa por ele, como a mídia de fora toda.
 
+**Chamadas**
+- Com o aperte para falar ligado, o "Desligado" da supressão de ruído volta a funcionar: ele tinha o mesmo número da caixa do atalho, logo acima (#35).
+
+**Texto em qualquer idioma**
+- Os títulos das páginas Chat e Plugins passam pela tradução, e os textos que os temas desenham (como o "TRIPULAÇÃO" do orbital ou o "SEÇÕES" do editorial) dá para traduzir nos arquivos de idioma (#20).
+- Frases que eram cortadas com "…" em lugares estreitos agora quebram a linha: a coluna Ativos agora vazia, a aba de adicionar amigo, os pedidos de mensagem, as configurações de voz e do cronômetro, o comando do servidor de linguagem e as threads arquivadas (#20).
+
 ## 0.6.6
 
 **Aparência**

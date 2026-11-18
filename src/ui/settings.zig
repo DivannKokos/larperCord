@@ -1011,7 +1011,7 @@ fn page(p: *Page, previews: []const Preview) void {
             p.toggle(i18n.tr("Sublinhar links", "Underline links"), i18n.tr("Desligado, o sublinhado só aparece com o mouse em cima.", "When off, links are only underlined on hover."), &s.underline_links);
         },
         .chat => {
-            p.title("Chat");
+            p.title(i18n.tr("Chat", "Chat"));
             p.heading(i18n.tr("Imagens", "Images"));
             p.toggle(i18n.tr("Reproduzir GIFs automaticamente", "Automatically play GIFs"), i18n.tr("Com a janela em foco, como no Discord. Desligado, o GIF anda quando o mouse passa por cima.", "While the window is focused, like Discord. When off, a GIF plays while you hover it."), &s.autoplay_gifs);
             p.toggle(i18n.tr("Mostrar imagens de links", "Show images from links"), i18n.tr("Imagens e GIFs de links mandados na conversa.", "Images and GIFs from links posted in chat."), &s.show_embeds);
