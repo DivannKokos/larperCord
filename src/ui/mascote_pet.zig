@@ -416,11 +416,15 @@ fn actSeconds(a: Act) f32 {
     };
 }
 
+/// QA: o portal começou (ele dura 0,8 s, e um quadro lento do Debug pode passar disso).
+pub var qa_portal = false;
+
 fn startAct(a: Act, now: i64) void {
     s.act = a;
     s.act_ms = now;
     s.act_var = @truncate(rand());
     if (a == .fish) s.need_catch = true;
+    if (a == .portal) qa_portal = true;
 }
 
 /// Uma viagem até `dest` (onde os pés pousam), em pulos de no máximo 280 px.

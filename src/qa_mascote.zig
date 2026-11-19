@@ -657,7 +657,10 @@ fn rolled(comptime face: u8) *const fn (*App) bool {
     }.f;
 }
 fn paletteOpenPortal(app: *App) bool {
-    return app.st.palette.open and pet.activity() == .portal;
+    return app.st.palette.open and (pet.activity() == .portal or pet.qa_portal);
+}
+fn portalReset(_: *App) void {
+    pet.qa_portal = false;
 }
 fn paletteClosed(app: *App) bool {
     return !app.st.palette.open;
@@ -1527,6 +1530,7 @@ pub const ops = [_]Op{
 
     s("mascote: as teclas"),
     run(playReset),
+    run(portalReset),
     .{ .key = .{ .key = c.ImGuiKey_K, .ctrl = true } },
     expect("Ctrl+K: a paleta abre, e ele pula num portal", paletteOpenPortal),
     .{ .key = .{ .key = c.ImGuiKey_Escape } },
