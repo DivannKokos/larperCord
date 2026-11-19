@@ -307,7 +307,12 @@ const tOggWave = markAudio("audio-wave:", gw.audio_ogg);
 const tOggSpeed = markAudio("audio-speed:", gw.audio_ogg);
 const tOggCard = markAudio("audio-card:", gw.audio_ogg);
 const tWavPlay = markAudio("audio-play:", gw.audio_wav);
-const tFlacPlay = markAudio("audio-play:", gw.audio_flac);
+/// Sem o FFmpeg (o CI não tem), o FLAC é cartão de arquivo e não há o que tocar: o
+/// alvo vazio pula o clique.
+fn tFlacPlay(app: *App, buf: []u8) []const u8 {
+    if (ffmpeg.get() == null) return "";
+    return markOf(buf, "audio-play:", idOf(app, gw.audio_flac));
+}
 
 fn jumpMp3(app: *App) void {
     jump(app, gw.audio_mp3);
@@ -585,10 +590,12 @@ fn measurePaused(app: *App) bool {
 }
 /// Os quadros dizem se algo ficou pedindo redesenho: uns 25 por segundo com o
 /// visualizador, bem menos sem ele, e parado só os 4 do robô. A CPU, bem folgada (a
-/// máquina do QA é dividida), só pega um laço esquecido.
+/// máquina do QA é dividida), só pega um laço esquecido. Com QA_SLOW (o CI, numa
+/// máquina mais lenta), mais folgada, mas abaixo de um núcleo inteiro.
 fn cpuSane(_: *App) bool {
+    const slow: f64 = if (c.SDL_getenv("QA_SLOW")) |v| std.fmt.parseFloat(f64, std.mem.span(v)) catch 1 else 1;
     return fps_playing > 15 and fps_playing < 36 and fps_noviz < fps_playing and fps_paused < 7 and
-        cpu_playing >= 0 and cpu_playing < 40;
+        cpu_playing >= 0 and cpu_playing < @min(40 * slow, 90);
 }
 
 pub const ops = [_]Op{
