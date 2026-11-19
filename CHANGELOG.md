@@ -72,6 +72,9 @@
 **Keybinds**
 - Ctrl+R restarts larperCord, like the button in Settings → Updates, and can be changed in Settings → Keybinds. By ErnstBecker (#42).
 
+**Themes**
+- Six new themes in the community gallery on the site: Rose Pine, Tokyo Night, Kanagawa, Dracula, One Dark and GitHub Dark. By mealet (#43).
+
 ## 0.6.6
 
 **Appearance**

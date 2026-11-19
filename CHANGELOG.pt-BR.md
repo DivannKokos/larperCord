@@ -72,6 +72,9 @@
 **Atalhos de teclado**
 - Ctrl+R reinicia o larperCord, como o botão em Configurações → Atualizações, e dá para trocar em Configurações → Atalhos de teclado. De ErnstBecker (#42).
 
+**Temas**
+- Seis temas novos na galeria da comunidade do site: Rose Pine, Tokyo Night, Kanagawa, Dracula, One Dark e GitHub Dark. De mealet (#43).
+
 ## 0.6.6
 
 **Aparência**
